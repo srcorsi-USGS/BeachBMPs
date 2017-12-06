@@ -1,0 +1,13 @@
+target_default: all
+
+packages:
+  - remake
+  - readxl
+  - yaml
+  
+include:
+  - 10_load_data.yml
+
+targets:
+  all:
+    depends: 
