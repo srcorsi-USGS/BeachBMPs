@@ -1,0 +1,16 @@
+target_default: 40_modeling
+
+include:
+  - 10_load_data.yml
+
+sources:
+  - model_63rd.R
+
+targets:
+  30_explore_data:
+  depends:
+  - 40_modeling/figures/model63rd.pdf
+
+
+30_explore_data/figures/test_plot.pdf:
+  command: model_63rd(df63rd)

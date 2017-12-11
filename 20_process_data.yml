@@ -1,0 +1,24 @@
+target_default: 20_process_data
+
+packages:
+  - dplyr
+  - yaml
+
+## All R files that are used must be listed here:
+sources:
+  - 20_process_data/src/processBeachData.R
+
+#Define targets
+targets:
+  10_load_data:
+    depends: 
+#     - df63rd
+#     - dfJeorse
+
+  df63rd:
+   command:
+
+  
+  
+
+

@@ -1,0 +1,30 @@
+target_default: 30_explore_data
+
+include:
+  - 10_load_data.yml
+
+sources:
+  - 30_explore_data/src/test_plot.R
+  - 30_explore_data/src/plotVariablesTimeSeries.R
+#  - 30_explore_data/src/processBeachData.R
+
+targets:
+ 30_explore_data:
+  depends:
+  - 30_explore_data/figures/test_plot.pdf
+  - 30_explore_data/figures/varPlots63rd.pdf
+#  - 30_explore_data/figures/varPlotsJeorse.pdf
+ 
+ 30_explore_data/figures/test_plot.pdf:
+  command: test_plot(target_name)
+
+ 30_explore_data/figures/varPlots63rd.pdf:
+  command: plotVarsTS(df=df63rd, target_name, beach = I("63rd"))
+
+# 30_explore_data/figures/varPlotsJeorse.pdf:
+#  command: plotVarsTS(df=dfJeorse, target_name, beach = I("Jeorse"))
+  
+# DataSummaryInfo63rd:
+#   command: 
+
+# add function to write csvs with summary info for IVs

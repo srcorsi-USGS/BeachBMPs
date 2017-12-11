@@ -8,19 +8,28 @@ packages:
 ## All R files that are used must be listed here:
 sources:
   - 10_load_data/src/get_data.R
-  - 10_load_data/src/getPdate.R
+  - 10_load_data/src/addPdate.R
 
 #Define targets
 targets:
   10_load_data:
     depends: 
      - df63rd
+     - dfJeorse
 
-   df63rd:
-    command: get_data(raw_directory = "./10_load_data/raw/63rd/",filenm="63rd E coli and variables.xlsx")
+  df63rd:
+   command: get_data(raw_directory = I("./10_load_data/raw/63rd/"),
+     filenm= I("63rd E coli and variables.xlsx"),
+     sheet = I("E coli and variables"),
+     siteCol = I("ClientID"))
 
+  dfJeorse: 
+   command: get_data(raw_directory = I("./10_load_data/raw/Jeorse/"),
+     filenm= I("E coli 2010_2017-variables.xlsx"),
+     sheet = I("E coli 2010_2017-variables"),
+     siteCol = I("Location"))
 
-
+  
   
 
 

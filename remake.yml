@@ -6,8 +6,17 @@ packages:
   - yaml
   
 include:
-  - 10_load_data.yml
+  - 30_explore_data.yml
 
 targets:
   all:
     depends: 
+     - 30_explore_data/figures/test_plot.pdf
+     - 30_explore_data/figures/varPlots63rd.pdf
+#     - 30_explore_data/figures/varPlotsJeorse.pdf
+
+#     - 30_explore_data/figures/varPlots63rd.pdf
+#    - df63rd
+#    - dfJeorse
+#    - 30_explore_data/figures/varPlots63rd.pdf
+#    - 30_explore_data/figures/varPlotsJeorse.pdf
