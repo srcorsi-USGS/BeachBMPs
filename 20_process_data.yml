@@ -1,5 +1,8 @@
 target_default: 20_process_data
 
+include:
+  - 10_load_data.yml
+
 packages:
   - dplyr
   - yaml
@@ -7,18 +10,23 @@ packages:
 ## All R files that are used must be listed here:
 sources:
   - 20_process_data/src/processBeachData.R
+  - 20_process_data/src/fxn_cart2polar_polar2cart_df.R
+  - 20_process_data/src/process_63rd.R
 
 #Define targets
 targets:
-  10_load_data:
+  20_process_data:
     depends: 
+     - 20_process_data/figures/data_available_63rd.pdf
 #     - df63rd
 #     - dfJeorse
 
-  df63rd:
-   command:
+  df63rd.2:
+   command: process_63rd(df63rd)
+   
 
-  
+  20_process_data/figures/data_available_63rd.pdf:
+   command: plot_variable_availability(df63rd.2,I("pdate"),I("63rd"))
   
 
 

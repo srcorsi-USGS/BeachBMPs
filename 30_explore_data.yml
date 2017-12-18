@@ -1,7 +1,8 @@
 target_default: 30_explore_data
 
 include:
-  - 10_load_data.yml
+#  - 10_load_data.yml
+  - 20_process_data.yml
 
 sources:
   - 30_explore_data/src/test_plot.R

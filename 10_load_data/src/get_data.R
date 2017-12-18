@@ -22,20 +22,20 @@ get_data <- function(raw_directory,filenm,siteCol,dateCol="Date",...) {
 
 ################################################################################
 ## Summarize Jeorse data
-get_Jeorse_data <- function(raw_directory,filenm) {
-raw_directory <- "./10_load_data/raw/Jeorse/"
-filenm <- "E coli 2010_2017-variables.xlsx"
-
-df <- as.data.frame(read_excel(paste(raw_directory,filenm,sep="") ,sheet = "E coli 2010_2017-variables"))
-
-dateCol <- "Date"
-pdateCol <- "pdate"
-siteCol <- "Location"
-df <- addPdate(df,dateCol,,siteCol=siteCol)
-
-
-return(df)
-}
+# get_Jeorse_data <- function(raw_directory,filenm) {
+# raw_directory <- "./10_load_data/raw/Jeorse/"
+# filenm <- "E coli 2010_2017-variables.xlsx"
+# 
+# df <- as.data.frame(read_excel(paste(raw_directory,filenm,sep="") ,sheet = "E coli 2010_2017-variables"))
+# 
+# dateCol <- "Date"
+# pdateCol <- "pdate"
+# siteCol <- "Location"
+# df <- addPdate(df,dateCol,,siteCol=siteCol)
+# 
+# 
+# return(df)
+# }
 
 # startCol <- 4
 # endCol <- dim(df)[2]

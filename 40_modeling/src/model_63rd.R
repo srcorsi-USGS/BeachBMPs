@@ -77,37 +77,37 @@ df <- na.omit(df)
 
 #######)))))))########
 
-
-
-
-response <- "Ecoli"
-beginIV <- which(names(df)=="Ecoli")+1
-endIV <- dim(df)[2]-1
-
-model_beach_wq_change <- function(df,response,beginIV,endIV){
-  
-  IVs <- names(df)[beginIV:endIV]
-  matIVs <- as.matrix(df[,IVs])
-  colnames(matIVs) <- IVs
-  y<-log10(df[,response])
-  
-  g1<-cv.glmnet(matIVs,y,alpha=1,type.measure="mse",family='gaussian',nlambda=200)
-  
-}
-
-c1<-coef(g1, s='lambda.min')
-c1.1se <- coef(g1,s='lambda.1se')
-beta<-which(abs(c1)>0)[-1]-1
-beta.1se <- which(abs(c1.1se)>0)[-1]-1
-testvars.orig <- c(testvars.orig,colnames(matIVs)[beta])
-testvars.orig.1se <- c(testvars.orig.1se,colnames(matIVs)[beta.1se])
-
-plot(g1)
-
-
-plot(y,predict(g1,newx=matIVs))
-
-
-ls()
-save(list=ls(),file="workspace.RData")
+# 
+# 
+# 
+# response <- "Ecoli"
+# beginIV <- which(names(df)=="Ecoli")+1
+# endIV <- dim(df)[2]-1
+# 
+# model_beach_wq_change <- function(df,response,beginIV,endIV){
+#   
+#   IVs <- names(df)[beginIV:endIV]
+#   matIVs <- as.matrix(df[,IVs])
+#   colnames(matIVs) <- IVs
+#   y<-log10(df[,response])
+#   
+#   g1<-cv.glmnet(matIVs,y,alpha=1,type.measure="mse",family='gaussian',nlambda=200)
+#   
+# }
+# 
+# c1<-coef(g1, s='lambda.min')
+# c1.1se <- coef(g1,s='lambda.1se')
+# beta<-which(abs(c1)>0)[-1]-1
+# beta.1se <- which(abs(c1.1se)>0)[-1]-1
+# testvars.orig <- c(testvars.orig,colnames(matIVs)[beta])
+# testvars.orig.1se <- c(testvars.orig.1se,colnames(matIVs)[beta.1se])
+# 
+# plot(g1)
+# 
+# 
+# plot(y,predict(g1,newx=matIVs))
+# 
+# 
+# ls()
+# save(list=ls(),file="workspace.RData")
 
