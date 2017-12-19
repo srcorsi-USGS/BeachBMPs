@@ -3,17 +3,20 @@
 
 # df63rd <- make("df63rd")
 
-process_63rd <- function(df63rd) {
+process_Jeorse <- function(df63rd) {
   # ## Add perpendicular and parallel wind components
 
-  response <- "Ecoli"
-  beachAngle <- 27- 90
+  response <- "EC"
+  beachAngle <- 27- 90 #needs to be changed for Jeorse angle
   
   
-  velocities <- c("CMT.WdSpd4", "CMT.WdSpd6", "CMT.WdGst4", "CMT.WdGst6")
-  directions <- c("CMT.WdDir4", "CMT.WdDir6", "CMT.WdDir4", "CMT.WdDir6")
+  dfModel <- dfJeorse
   
-  dfModel <- df63rd
+  velocities <- c(grep("WdSpd",names(dfModel),value=TRUE),
+                  grep("WdGst",names(dfModel),value=TRUE))
+  directions <- c(grep("WdDir",names(dfModel),value=TRUE),
+                  grep("WdDir",names(dfModel),value=TRUE))
+  
   
   for (i in 1:length(velocities)){
     
@@ -26,11 +29,12 @@ process_63rd <- function(df63rd) {
   #------------------------------------------------------
   
   ## Add perpendicular and parallel currents
-  
-  currentE <- c("GL.E.WtrVelSur4", "GL.E.WtrVelSur6", "GL.E.WtrVelDA4", "GL.E.WtrVelDA6")
-  currentN <- c("GL.N.WtrVelSur4", "GL.N.WtrVelSur6", "GL.N.WtrVelDA4", "GL.N.WtrVelDA6")
-  currentNames <- c("Sur4","Sur6","DA4","DA6")
-  
+  currentE <- grep("E",c(grep("AirVel",names(dfModel),value=TRUE),
+    grep("Vel",names(dfModel),value=TRUE)),value = TRUE)
+  currentN <- grep("N",c(grep("AirVel",names(dfModel),value=TRUE),
+             grep("Vel",names(dfModel),value=TRUE)),value = TRUE)
+  currentNames <- sub("_","",sub("E","",currentE))
+    
   temp <- dfModel
   for (i in 1:length(currentE)) {
     varNamesOrig <- names(temp)
@@ -47,7 +51,10 @@ process_63rd <- function(df63rd) {
     temp <- temp[,c(varNamesOrig,PerpName,ParlName)]
     
   }
-  dfModel <- temp
+  
+  #remove original wind and current variables
+  removeVars <- which(names(dfModel) %in% c(velocities,directions,currentE,currentN))
+  dfModel <- temp[,-removeVars]
   
   ## end adding perpendicular and parallel currents ##
   
@@ -58,34 +65,27 @@ process_63rd <- function(df63rd) {
   
   df <- dfModel[which(!is.na(dfModel[,response])),] #remove rows without E coli
 
-  preDates <- as.POSIXct(c("2006-01-02","2010-01-02"))
-  postDates <- as.POSIXct(c("2010-01-02","2016-01-02"))
+  preDates <- as.POSIXct(c("2010-05-01","2015-10-01"))
+  initialPostPeriod <- as.POSIXct(c("2015-07-06","2015-08-01"))
+  postDates <- as.POSIXct(c("2016-01-02","2017-10-01"))
 #  df <- subset(df,pdate>preDates[1])
   df$period <- ifelse(df$pdate < preDates[2],"pre","post")
   df$period <- ifelse(df$pdate >postDates[1] & df$pdate < postDates[2],"during",df$period)
-  df <- df[df$pdate>preDates[1],]
+  df$period <- ifelse(df$pdate>initialPostPeriod[1] & df$pdate < initialPostPeriod[2],"pre",df$period)
+  df <- df[which(df$pdate>preDates[1]),]
   # focus on critical variables for modeling.
 
-  #remove Chicago weather variables in favor of Calumet weather
-  df <- df[,-grep("CH",names(df))]
   naCols <- apply(df,MARGIN = 2, function(x) sum(is.na(x)) > 0)
-  dfMaxRows <- df[,colSums(is.na(df)) <= nrow(df)*0.05]  #Remove columns with more than 20% NAs
+  dfMaxRows <- df[,colSums(is.na(df)) <= nrow(df)*0.05]  #Remove columns with more than 5% NAs
   
   dfMaxRows <- na.omit(dfMaxRows)
   return(dfMaxRows)
   
 }
 
-# Explore number of IVs available for each observation over the years
 
-plot_variable_availability <- function(df,pdate="pdate",site){
-  pdf(paste0("20_process_data/figures/data_available_",site,".pdf"))
-  IVcount <- apply(df,MARGIN = 1,function(x)sum(!is.na(x)))
-  Obscount <- apply(df,MARGIN = 2,function(x)sum(!is.na(x)))
-  
-  plot(df$pdate,IVcount,xlab="",ylab="")
-  mtext("Independent variable availability",side=2,line=2.5,cex=1.5,font=2)
-  mtext("Date",side=1,line=3,cex=1.5,font=2)
-  mtext(paste0(site,": Independent Variables Available for E. coli observations"),side = 3, line = 2,font = 2, cex = 1.5)
-  dev.off()
+split_Jeorse <- function(df,site){
+  df <- df[which(df[,"Location"] == site),]
+  return(df)
 }
+

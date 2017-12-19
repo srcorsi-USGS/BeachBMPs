@@ -12,21 +12,30 @@ sources:
   - 20_process_data/src/processBeachData.R
   - 20_process_data/src/fxn_cart2polar_polar2cart_df.R
   - 20_process_data/src/process_63rd.R
+  - 20_process_data/src/process_Jeorse.R
 
 #Define targets
 targets:
   20_process_data:
     depends: 
      - 20_process_data/figures/data_available_63rd.pdf
-#     - df63rd
-#     - dfJeorse
+     - 20_process_data/figures/data_available_63rd_processed.pdf
 
-  df63rd.2:
+  df63rd_processed:
    command: process_63rd(df63rd)
-   
 
   20_process_data/figures/data_available_63rd.pdf:
-   command: plot_variable_availability(df63rd.2,I("pdate"),I("63rd"))
+   command: plot_variable_availability(df63rd_processed,I("pdate"),I("63rd_processed"))
+
+  20_process_data/figures/data_available_63rd_processed.pdf:
+   command: plot_variable_availability(df63rd,I("pdate"),I("63rd"))
   
+  dfJeorse_processed:
+   command: process_Jeorse(dfJeorse)
 
-
+  dfJeorse1_processed:
+   command: split_Jeorse(dfJeorse_processed,I("JP1"))
+   
+  dfJeorse2_processed:
+   command: split_Jeorse(dfJeorse_processed,I("JP2"))
+   
