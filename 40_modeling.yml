@@ -1,16 +1,25 @@
 target_default: 40_modeling
 
 include:
-  - 10_load_data.yml
+  - 20_process_data.yml
 
+packages:
+  - glmnet
+  - yaml
+  - censReg
+  - parallel
+  
 sources:
-  - model_63rd.R
+  - 40_modeling/BeachBMPLasso.R
+  - 40_modeling/fxn_Rsquared.R
 
 targets:
-  30_explore_data:
+  40_modeling:
   depends:
-  - 40_modeling/figures/model63rd.pdf
+#  - 40_modeling/figures/model63rd.pdf
 
+  Jeorse_model:
+   command: modelBeachBMP()
 
-30_explore_data/figures/test_plot.pdf:
-  command: model_63rd(df63rd)
+#30_explore_data/figures/test_plot.pdf:
+#  command: model_63rd(df63rd)
