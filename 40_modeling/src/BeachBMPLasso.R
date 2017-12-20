@@ -288,8 +288,8 @@ lm_modeling <- function(df,response,logResponse,CV.var.summary){
     vars.1se <- unlist(strsplit(unique.1se[model.1se],fixed=T,split="+"))
     form <- formula(paste(response,"~",unique.1se[model.1se]))
     m.1selm <- lm(form,data=df)
-
-    step.1se <- m2<-step(m.1selm,scope=form,k=log(nrow(testdf))) #BIC
+    
+    step.1se <- m2<-step(m.1selm,scope=form,k=log(nrow(df))) #BIC
     
     #compute LASSO model with CV identified variables
     form <- formula(paste(response,"~",paste(unique(testvars.orig.1se),collapse="+")))
@@ -302,10 +302,12 @@ lm_modeling <- function(df,response,logResponse,CV.var.summary){
     form <- formula(paste(response,"~",paste(names(vars.CVcen),collapse="+")))
     m.CVlm <- lm(form,data=df)
     
-    step.cv <- m2<-step(m.CVlm,scope=form,k=log(nrow(testdf))) #BIC
+    step.cv <- m2<-step(m.CVlm,scope=form,k=log(nrow(df))) #BIC
     #m.CVcen
     #CV.1se
   }
+  models <- list(step.1se,step.cv)
+  names(models) <- c("1se","cv")
   return(list(step.1se,step.cv))
 }
 
@@ -406,207 +408,40 @@ graphModels <- function(y,parameter,filetype){
   }
   dfModelCoefs <- data.frame(parameter=parameter,ModelID=method,Variable=names(coef(CR.1se)),
                              coefficient=coef(CR.1se),Method="1se",file=filetype)
-  
-  plotModelPlain <- function(predictions,y,filetype,method,variableNames){
+}  
+plotModelPlain <- function(models,site,filenm,logResponse=TRUE){
+  #Define observations and fitted values
+  pdf(filenm)
+  for (j in 1:length(models)){
+    model <- models[[j]]
+    method <- names(models)[j]
+    y <- model[["model"]][,1]
+    predictions <- model[["fitted.values"]]
+    
+    #Define axes limits
+    ylims <- round(range(c(y,predictions,na.rm=T)*2)+c(0,0.5),0)/2
+    
+    #Define variables and coefficient signs
+    variableNames <- names(coef(model))[-1]
+    coefSign <- ifelse(coef(model)[variableNames]>0,"+","-")
+    
     par(mar=c(5,4,8,2))
     colors <- "blue"
     plot(predictions~y,xlab="Observations (Counts/100 ml)",ylab="Predictions (Counts/100 ml)",
          pch=20,ylim=ylims,xlim=ylims,col=colors)
     abline(0,1)
-    mtext(paste(filetype, method, "regression model"),side=3,font = 2,line = 2,cex = 1.4)
+    mtext(paste(site, method, "LASSO/lm regression model"),side=3,font = 2,line = 2,cex = 1.4)
     if(logResponse) mtext("In log 10 space",side=3,line=0.7,font=2)
     
     #Add variable names
-    for (j in length(variableNames):1){
-      k<-length(vars.1se)-j+1
-      mtext(paste(coefSign[j],vars.1se[j],sep=""),side=3,line=fsize*k,adj=0,cex=fsize)
-    }
-    
-  }
-  
-  plotModelPlain(predictions,y,filetype,method,variableNames=vars.1se)
-  
-  #Graph Lasso model determined with most common variables and n/3-fold XV, then 
-  #recalibrated with CensReg
-  if(length(testvars.orig.1se)>0){
-    method <- "LASSO CV"
-    par(mar=c(5,4,8,8))
-    intercept <- coef(m.CVcen)[1]
-    df.model <- as.data.frame(df[,names(vars.CVcen)])
-    df.predict <- as.data.frame(df.model)
-    predictions <- as.matrix(df.model) %*% coef(m.CVcen)[names(vars.CVcen)] + intercept
-    dfRegressionResults <- cbind(dfRegressionResults,predictions)
-    names(dfRegressionResults)[dim(dfRegressionResults)[2]] <- paste(method,"_",response,sep="")
-    
-    residuals <- predictions-y
-    #smear <- get.smear(residuals)
-    colors <- ifelse(y>EPAthresh & predictions>thresh,"blue","skyblue")
-    colors <- ifelse(y>EPAthresh & predictions<thresh,"darkorange1",colors)
-    colors <- ifelse(y<EPAthresh & predictions<thresh,"springgreen4",colors)
-    colors <- ifelse(y<EPAthresh & predictions>thresh,"purple1",colors)
-    sensitivity <- sum(sum(colors=="blue")/sum(y>EPAthresh))
-    specificity <- sum(sum(colors=="springgreen4")/sum(y<EPAthresh))
-    ylims <- round(range(c(y,predictions)*2)+c(0,0.5),0)/2
-    plot(predictions~y,xlab="Observations (gc/L)",ylab="Predictions (gc/L)",
-         pch=20,ylim=ylims,xlim=ylims,col=colors)
-    abline(h=thresh,v=EPAthresh,lty=3,col="blue")
-    #        abline(0,1)
-    coefSign <- ifelse(vars.CVcen>0,"+","-")
     fsize <- 0.8
-    for (j in length(vars.CVcen):1){
-      k<-length(vars.CVcen)-j+1
-      mtext(paste(coefSign[j],names(vars.CVcen[j]),sep=""),side=3,line=fsize*k,adj=0,cex=fsize)
+    for (j in length(variableNames):1){
+      k<-length(variableNames)-j+1
+      mtext(paste(coefSign[j],variableNames[j],sep=""),side=3,line=fsize*k,adj=0,cex=fsize)
     }
-    mtext(paste(method,": ",response,sep=""),line=0.,side=3,font=2)
-    text(x=ylims[2],y=ylims[2],labels=paste("Correct pos =",sum(colors=="blue")),adj=c(0.9,0.5,1))
-    text(x=ylims[1],y=ylims[2],labels=paste("False pos =",sum(colors=="purple1")),adj=c(0.1,0.5,1))
-    text(x=ylims[1],y=ylims[1],labels=paste("Correct neg =",sum(colors=="springgreen4")),adj=c(0.1,0.5,1))
-    text(x=ylims[2],y=ylims[1],labels=paste("False neg =",sum(colors=="darkorange1")),adj=c(0.9,0.5,1))
-    mtext(paste("Sensitivity =",round(sensitivity,2)),side=4,line=2)
-    mtext(paste("Specificity =",round(specificity,2)),side=4,line=1)
-  }else{
-    plot(1:10,1:10,pch="")
-    mtext(line=-5,"no model")
-    if(length(testvars)>=40)mtext(line=-6,"too many variables remain")
   }
-  dfModelCoefs.tmp <- data.frame(parameter=parameter,ModelID=method,Variable=names(coef(m.CVcen)),
-                                 coefficient=coef(m.CVcen),Method="LCV",file=filetype)
-  dfModelCoefs <- rbind(dfModelCoefs,dfModelCoefs.tmp)
-  
-  plotModelPlain(predictions,y,filetype,method,variableNames=vars.CVcen)
-  
-  # Graph Censored regression results
-  #      thresh <- log10(235)
-  dev.set(model.dev)
-  if(length(testvars)<40 & length(testvars)>0 & length(coef(m2))>1){
-    method <- "Censored"
-    par(mar=c(5,4,8,8))
-    intercept <- coef(m2)[1]
-    df.model <- as.data.frame(testdf[,modelvars])
-    df.predict <- as.data.frame(df.model)
-    predictions <- as.matrix(df.model) %*% coef(m2)[modelvars] + intercept
-    dfRegressionResults <- cbind(dfRegressionResults,predictions)
-    names(dfRegressionResults)[dim(dfRegressionResults)[2]] <- paste(method,"_",response,sep="")
-    
-    residuals.Cens <- predictions-y
-    colors <- ifelse(y>EPAthresh & predictions>thresh,"blue","skyblue")
-    colors <- ifelse(y>EPAthresh & predictions<thresh,"darkorange1",colors)
-    colors <- ifelse(y<EPAthresh & predictions<thresh,"springgreen4",colors)
-    colors <- ifelse(y<EPAthresh & predictions>thresh,"purple1",colors)
-    sensitivity <- sum(sum(colors=="blue")/sum(y>EPAthresh))
-    specificity <- sum(sum(colors=="springgreen4")/sum(y<EPAthresh))
-    
-    ylims <- round(range(c(y,predictions)*2)+c(0,0.5),0)/2
-    plot(predictions~y,xlab="Observations (gc/L)",ylab="Predictions (gc/L)",
-         pch=20,ylim=ylims,xlim=ylims,col=colors)
-    abline(h=thresh,v=EPAthresh,lty=3,col="blue")
-    #        abline(0,1)
-    coefSign <- ifelse(coef(m2)[modelvars]>0,"+","-")
-    for (j in length(modelvars):1){
-      k<-length(modelvars)-j+1
-      mtext(paste(coefSign[j],modelvars[j],sep=""),side=3,line=fsize*k,adj=0,cex=fsize)
-    }
-    mtext(paste(method,": ",response,sep=""),line=0.,side=3,font=2)
-    text(x=ylims[2],y=ylims[2],labels=paste("Correct pos =",sum(colors=="blue")),adj=c(0.9,0.5,1))
-    text(x=ylims[1],y=ylims[2],labels=paste("False pos =",sum(colors=="purple1")),adj=c(0.1,0.5,1))
-    text(x=ylims[1],y=ylims[1],labels=paste("Correct neg =",sum(colors=="springgreen4")),adj=c(0.1,0.5,1))
-    text(x=ylims[2],y=ylims[1],labels=paste("False neg =",sum(colors=="darkorange1")),adj=c(0.9,0.5,1))
-    mtext(paste("Sensitivity =",round(sensitivity,2)),side=4,line=2)
-    mtext(paste("Specificity =",round(specificity,2)),side=4,line=1)
-  }else{
-    plot(1:10,1:10,pch="")
-    mtext(line=-5,"no model")
-    if(length(testvars)>=40)mtext(line=-6,"too many variables remain")
-  }
-  dfModelCoefs.tmp <- data.frame(parameter=parameter,ModelID=method,Variable=names(coef(m2)),
-                                 coefficient=coef(m2),Method="CEN",file=filetype)
-  dfModelCoefs <- rbind(dfModelCoefs,dfModelCoefs.tmp)
-  
-  plotModelPlain(predictions,y,filetype,method,variableNames=modelvars)
-  
-  # Graph traditional Stepwise regression results
-  if(length(testvars)<40 & length(testvars)>0 & length(coef(m2.step))>1){
-    method <- "OLS"
-    par(mar=c(5,4,8,8))
-    intercept.step <- coef(m2.step)[1]
-    df.model.step <- as.data.frame(testdf[,modelvars.step])
-    df.predict.step <- as.data.frame(df.model.step)
-    predictions.step <- as.matrix(df.model.step) %*% coef(m2.step)[modelvars.step] + intercept.step
-    dfRegressionResults <- cbind(dfRegressionResults,predictions)
-    names(dfRegressionResults)[dim(dfRegressionResults)[2]] <- paste(method,"_",response,sep="")
-    
-    residuals.ols <- predictions.step-y
-    colors <- ifelse(y>EPAthresh & predictions.step>thresh,"blue","skyblue")
-    colors <- ifelse(y>EPAthresh & predictions.step<thresh,"darkorange1",colors)
-    colors <- ifelse(y<EPAthresh & predictions.step<thresh,"springgreen4",colors)
-    colors <- ifelse(y<EPAthresh & predictions.step>thresh,"purple1",colors)
-    sensitivity <- sum(sum(colors=="blue")/sum(y>EPAthresh))
-    specificity <- sum(sum(colors=="springgreen4")/sum(y<EPAthresh))
-    #        ylims <- round(range(c(y,predictions.step)*2)+c(0,0.5),0)/2
-    plot(predictions.step~y,xlab="Observations (gc/L)",ylab="Predictions (gc/L)",
-         pch=20,ylim=ylims,xlim=ylims,col=colors)
-    abline(h=thresh,v=EPAthresh,lty=3,col="blue")
-    #        abline(0,1)
-    coefSign <- ifelse(coef(m2.step)[modelvars.step]>0,"+","-")
-    for (j in length(modelvars.step):1){
-      k<-length(modelvars.step)-j+1
-      mtext(paste(coefSign[j],modelvars.step[j],sep=""),side=3,line=fsize*k,adj=0,cex=fsize)
-    }
-    mtext(paste(method,": ",response,sep=""),line=0.1,side=3,font=2)
-    text(x=ylims[2],y=ylims[2],labels=paste("Correct pos =",sum(colors=="blue")),adj=c(0.9,0.5,1))
-    text(x=ylims[1],y=ylims[2],labels=paste("False pos =",sum(colors=="purple1")),adj=c(0.1,0.5,1))
-    text(x=ylims[1],y=ylims[1],labels=paste("Correct neg =",sum(colors=="springgreen4")),adj=c(0.1,0.5,1))
-    text(x=ylims[2],y=ylims[1],labels=paste("False neg =",sum(colors=="darkorange1")),adj=c(0.9,0.5,1))
-    mtext(paste("Sensitivity =",round(sensitivity,2)),side=4,line=2)
-    mtext(paste("Specificity =",round(specificity,2)),side=4,line=1)
-    
-    plotModelPlain(predictions,y,filetype,method,variableNames=modelvars.step)
-    
-    dfModelCoefs.tmp <- data.frame(parameter=parameter,ModelID=method,Variable=names(coef(m2.step)),
-                                   coefficient=coef(m2.step),Method="OLS",file=filetype)
-    dfModelCoefs <- rbind(dfModelCoefs,dfModelCoefs.tmp)
-    dfModelCoefsFinal <- dfModelCoefs
-    
-    
-    #Aggregate model results into one frequency dataframe per method
-    freq.vars$model <- response
-    if(exists("freq.vars.all")) {freq.vars.all <- rbind(freq.vars.all,freq.vars)
-    }else{freq.vars.all <- freq.vars}
-    
-    
-    #Aggregate model results into one model dataframe per method
-    conf.ind <- as.data.frame(confint(m2))
-    conf.ind$model <- response
-    model.ind <- cbind(model.ind,conf.ind)
-    if(exists("model.all")) {model.all <- rbind(model.all,model.ind)
-    }else{model.all <- model.ind}
-    
-    conf.ind.step <- as.data.frame(confint(m2.step))
-    conf.ind.step$model <- response
-    model.ind.step <- cbind(model.ind.step,conf.ind.step)
-    if(exists("model.all.step")) {model.all.step <- rbind(model.all.step,model.ind.step)
-    }else{model.all.step <- model.ind.step}
-  }else{
-    plot(1:10,1:10,pch="")
-    mtext(line=-5,"no model")
-    if(length(testvars)>=40)mtext(line=-6,"too many variables remain")
-  }
-  dev.off(model.dev)
+  dev.off()
 }
-# shell.exec(filenm)
-# #############################################
-# # Save final variable files and model objects
-# #############################################
-# 
-# write.csv(freq.vars.all,paste(parameter,filetype,"ModelVarFreqCenAlass.csv",sep=""))
-# write.csv(model.all,paste(parameter,filetype,"ModelCICenAlass.csv",sep=""))
-# write.csv(model.all.step,paste(parameter,filetype,"ModelCIStepAlass.csv",sep=""))
-# names(models) <- response
-# names(models.step) <- response
-# save(models,file=paste(parameter,filetype,"ModelObjectsAlass.Rdata",sep=""))
-# save(models.step,file=paste(parameter,filetype,"ModelObjectsStepAlass.Rdata",sep=""))
-# save(dfRegressionResults,file=paste(parameter,filetype,"ObservationsAndPredictionsAlass.Rdata",sep=""))
-# 
-# 
-# write.csv(dfModelCoefsFinal,paste(parameter,"ModelcoefficientsAlass",response,".csv",sep=""),row.names=F)
+
+#plotModelPlain(testModels,"Junker","test.pdf")
 

@@ -12,6 +12,7 @@ packages:
 sources:
   - 40_modeling/src/BeachBMPLasso.R
   - 40_modeling/src/fxn_Rsquared.R
+  - 40_modeling/figures/Jeorse1_model_graphs.pdf
 
 targets:
   40_modeling:
@@ -35,3 +36,6 @@ targets:
    
   models_Jeorse1:
    command: lm_modeling(dfJeorse1_processed,I("EC"),TRUE,CV.models.summary_Jeorse)
+   
+  40_modeling/figures/Jeorse1_model_graphs.pdf:
+   command: plotModelPlain(models_Jeorse1,I("Jeorse 1"),target_name)
