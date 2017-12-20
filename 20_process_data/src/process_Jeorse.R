@@ -22,10 +22,27 @@ process_Jeorse <- function(df63rd) {
     
     dfModel <- polar2cart(dfModel,r = velocities[i], th = directions[i], circle = 360,
                           x= paste0(velocities[i],"East"),y=paste0(velocities[i],"North"))
-    dfModel <- rotatecoords(df = dfModel,east = paste0(velocities[i],"East"),north = paste0(velocities[i],"North"),orientation = beachAngle,circle = 360,name = velocities[i])
+    dfModel <- rotatecoords(df = dfModel,east = paste0(velocities[i],"East"),
+                            north = paste0(velocities[i],"North"),
+                            orientation = beachAngle,circle = 360,
+                            name = velocities[i])
   }
   
- 
+
+  waveheights <- grep("SigWvHgt",names(dfModel),value=TRUE)
+  WvDirections <- grep("WvDir",names(dfModel),value=TRUE)
+  
+  for (i in 1:length(waveheights)){
+    
+    dfModel <- polar2cart(dfModel,r = waveheights[i], th = WvDirections[i], circle = 360,
+                          x= paste0(waveheights[i],"East"),y=paste0(waveheights[i],"North"))
+    dfModel <- rotatecoords(df = dfModel,east = paste0(waveheights[i],"East"),
+                            north = paste0(waveheights[i],"North"),
+                            orientation = beachAngle,circle = 360,
+                            name = waveheights[i])
+  }
+  
+  
   #------------------------------------------------------
   
   ## Add perpendicular and parallel currents
@@ -53,7 +70,7 @@ process_Jeorse <- function(df63rd) {
   }
   
   #remove original wind and current variables
-  removeVars <- which(names(dfModel) %in% c(velocities,directions,currentE,currentN))
+  removeVars <- which(names(dfModel) %in% c(velocities,directions,WvDirections,currentE,currentN))
   dfModel <- temp[,-removeVars]
   
   ## end adding perpendicular and parallel currents ##

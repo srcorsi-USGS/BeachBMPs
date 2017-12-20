@@ -7,7 +7,8 @@ packages:
   
 include:
 #  - 30_explore_data.yml
-  - 20_process_data.yml
+#  - 20_process_data.yml
+  - 40_modeling.yml
 #  - 10_load_data.yml
 
 targets:

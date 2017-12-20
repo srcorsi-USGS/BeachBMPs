@@ -10,16 +10,28 @@ packages:
   - parallel
   
 sources:
-  - 40_modeling/BeachBMPLasso.R
-  - 40_modeling/fxn_Rsquared.R
+  - 40_modeling/src/BeachBMPLasso.R
+  - 40_modeling/src/fxn_Rsquared.R
 
 targets:
   40_modeling:
-  depends:
-#  - 40_modeling/figures/model63rd.pdf
+   depends:
+    - 40_modeling/figures/JeorseEColiCVgraphsAlass.pdf
 
-  Jeorse_model:
-   command: modelBeachBMP()
+  seed:
+   command: setModelingSeed(100)
+  
+  IVs:
+   command: getIVs(dfJeorse1_processed,5,60)#dim(dfJeorse1_processed)[2]-1)
 
-#30_explore_data/figures/test_plot.pdf:
-#  command: model_63rd(df63rd)
+  CV.models_Jeorse1:
+   command: modelBeachBMP(dfJeorse1_processed,I("EC"),IVs,seed)
+   
+  CV.models.summary_Jeorse:
+   command: getCVSummary(CV.models_Jeorse1,seed)
+
+  40_modeling/figures/JeorseEColiCVgraphsAlass.pdf:
+   command: plotCVResults(CV.models_Jeorse1,target_name,seed)
+   
+  models_Jeorse1:
+   command: lm_modeling(dfJeorse1_processed,I("EC"),TRUE,CV.models.summary_Jeorse)

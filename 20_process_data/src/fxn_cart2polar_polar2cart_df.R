@@ -67,8 +67,8 @@ rotatecoords  <- function(df,east,north,orientation,circle,name) {
   
   # Replace east/north velocities with perpendicular (perp) and 
   # parallel (par) components
-  names(df)[eastloc] <- paste("perp",name,sep="")
-  names(df)[northloc] <- paste("parl",name,sep="")
+  names(df)[eastloc] <- paste(name,"perp",sep="")
+  names(df)[northloc] <- paste(name,"parl",sep="")
   df[,eastloc] <- xy[,1]
   df[,northloc] <- xy[,2]
   return(df)
