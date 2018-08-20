@@ -1,0 +1,12 @@
+Observations of individual variables
+
+1. E. coli analysis method change ~2002-2003
+6. Step change in wind speed in 1999-2000. Lower values recorded 2012 and after. ARe these real or artifacts?
+7 & 8. Gaps in the middle of the data beween positive and negative 0.3 and 1.5
+9. Adjusted Wave Height: decreasing trend over time. Is this real or possibly an artifact of how it was measured? Significant wave ht (pg 35) does not have the same trend.
+10. Trends in gull counts. Is this real?
+11. Number of bathers much lower in later period. Is this real?
+12-19. Racine rain does not compare with total.precip from 556:723
+30. What is Model Water Level Meter? Is there an onsite sensor?
+42. Gap in cloud cover fraction between 0.15 and 0.2
+43. What is sigma?
