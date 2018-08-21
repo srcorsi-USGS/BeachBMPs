@@ -67,78 +67,76 @@ plotVarsTS <- function(df,variables,dateCol,beach){
 }
 
 
-get_Racine <- function(){
-dfNB <- read.csv("10_load_data/raw/Racine/North Beach Historical Database 1995-2016, COMBINED EDIT.csv",stringsAsFactors = FALSE, na.strings = c("NR","#N/A", "NC", "No Data","N/A"))
-#write.csv(dfNB[c(which(names(dfNB)=="Air.Temperature...F."):which(names(dfNB)=="Sigma...NOAA.Milwaukee..WI...Station.ID..9087057"))],file="IVs.csv")
-dfNB$Site <- "NorthBeach"
-
-dfNBIVs <- read.csv("10_load_data/raw/Racine/IVs.csv",stringsAsFactors = FALSE)
-IVs <- dfNBIVs[which(dfNBIVs$Keep==1),"IV"]
-
-dateCol <- "Date"
-pdateCol <- "pdate"
-siteCol <- "Site"
-dfNB <- addPdate(dfNB,dateCol,dateFormat = "%m/%d/%Y", siteCol=siteCol)
-
-
-
-
-
-
-#---------------------------------------------------------------------------------------
-
-names(dfNB)[which(names(dfNB) %in% c("E.coli..CFU.or.MPN.per.100mL."))] <- "Ecoli"
-
-response <- "Ecoli"
-responseRmk <- "EcoliRmk"
-
-dfNB$EcoliRmk <- "NA"
-dfNB[grep(">",dfNB$Ecoli),"EcoliRmk"] <- ">"
-dfNB$Ecoli <- as.numeric(sub("<","", dfNB$Ecoli))
-
-df <- dfNB[,c(pdateCol,response,IVs)]
-
-# Adjustments needed on these variables:
-# Adjutsed.Wind.Speed..mph. (remove "variable"), 
-
-df[grep("iable",df$Adjutsed.Wind.Speed..mph.),"Adjutsed.Wind.Speed..mph."] <- NA
-df$Adjutsed.Wind.Speed..mph. <- as.numeric(df$Adjutsed.Wind.Speed..mph.)
-
-
-dfCheck <- df[,-which(sapply(df, typeof)=="character" )]
-startCol <- 2
-endCol <- dim(dfCheck)[2]
-
-#dfSummary <- get_data_info(dfCheck,pdateCol,startCol,endCol)
-
-
-
-variables <- names(dfCheck)[2:dim(dfCheck)[2]]
-beach = "North Beach"
-
-# filenm <- "NorthBeach.pdf"
-# pdf(filenm)
-# plotVarsTS(dfCheck,variables,"pdate",beach=beach)
-# dev.off()
-# shell.exec(filenm)
-# 
-# plot(df$Air.Temperature...F.~df$Water.Temperature...F.)
-# abline(0,1)
-# 
-# plot(df$Air.Temperature...F.~df$Air.Temperature.Celsius.)
-# abline(0,1)
-# 
-# racineRain144 <- df$Racine.WWTP...144hr.Precip..in..*25.4
-# plot(df$Total.precip..mm....1.hr..556.723..Sum.144.hr ~racineRain144)
-# abline(0,1)
-# 
-# 
-# #plotColor <- ifelse(df$pdate < as.POSIXct("2001-01-01"),"red","black") #no GLCFS data before 2006
-# plot(df$Adjutsed.Wind.Speed..mph.* 0.44704 ~ df$Air.Velocity.m.s.,col="blue" )
-# abline(0,1)
-# 
-# plot(df$Wind.A.Component..BO....338.55ø.)
-
-return(df)
+get_Racine <- function(df,dfIVs){
+  #write.csv(df[c(which(names(df)=="Air.Temperature...F."):which(names(df)=="Sigma...NOAA.Milwaukee..WI...Station.ID..9087057"))],file="IVs.csv")
+  df$Site <- "NorthBeach"
+  
+  IVs <- dfIVs[which(dfIVs$Keep==1),"IV"]
+  
+  dateCol <- "Date"
+  pdateCol <- "pdate"
+  siteCol <- "Site"
+  df <- addPdate(df,dateCol,dateFormat = "%m/%d/%Y", siteCol=siteCol)
+  
+  
+  
+  
+  
+  
+  #---------------------------------------------------------------------------------------
+  
+  names(df)[which(names(df) %in% c("E.coli..CFU.or.MPN.per.100mL."))] <- "Ecoli"
+  
+  response <- "Ecoli"
+  responseRmk <- "EcoliRmk"
+  
+  df$EcoliRmk <- "NA"
+  df[grep(">",df$Ecoli),"EcoliRmk"] <- ">"
+  df$Ecoli <- as.numeric(sub("<","", df$Ecoli))
+  
+  df <- df[,c(pdateCol,response,IVs)]
+  
+  # Adjustments needed on these variables:
+  # Adjutsed.Wind.Speed..mph. (remove "variable"), 
+  
+  df[grep("iable",df$Adjutsed.Wind.Speed..mph.),"Adjutsed.Wind.Speed..mph."] <- NA
+  df$Adjutsed.Wind.Speed..mph. <- as.numeric(df$Adjutsed.Wind.Speed..mph.)
+  
+  
+  dfCheck <- df[,-which(sapply(df, typeof)=="character" )]
+  startCol <- 2
+  endCol <- dim(dfCheck)[2]
+  
+  #dfSummary <- get_data_info(dfCheck,pdateCol,startCol,endCol)
+  
+  
+  
+  variables <- names(dfCheck)[2:dim(dfCheck)[2]]
+  beach = "North Beach"
+  
+  # filenm <- "NorthBeach.pdf"
+  # pdf(filenm)
+  # plotVarsTS(dfCheck,variables,"pdate",beach=beach)
+  # dev.off()
+  # shell.exec(filenm)
+  # 
+  # plot(df$Air.Temperature...F.~df$Water.Temperature...F.)
+  # abline(0,1)
+  # 
+  # plot(df$Air.Temperature...F.~df$Air.Temperature.Celsius.)
+  # abline(0,1)
+  # 
+  # racineRain144 <- df$Racine.WWTP...144hr.Precip..in..*25.4
+  # plot(df$Total.precip..mm....1.hr..556.723..Sum.144.hr ~racineRain144)
+  # abline(0,1)
+  # 
+  # 
+  # #plotColor <- ifelse(df$pdate < as.POSIXct("2001-01-01"),"red","black") #no GLCFS data before 2006
+  # plot(df$Adjutsed.Wind.Speed..mph.* 0.44704 ~ df$Air.Velocity.m.s.,col="blue" )
+  # abline(0,1)
+  # 
+  # plot(df$Wind.A.Component..BO....338.55ø.)
+  
+  return(df)
 }
 #saveRDS(df,file="NorthBeach.rds")
