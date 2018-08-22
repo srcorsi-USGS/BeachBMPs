@@ -69,10 +69,11 @@ process_Racine <- function(df) {
   dfModel <- cbind(dfModel,dfRain)
   
     #log Q
-  Q_variables <- grep("discharge",names(dfModel),ignore.case = TRUE)
+  Q_variables <- grep("cubic",names(dfModel),ignore.case = TRUE)
   dfQ <- log10(dfModel[,Q_variables])
   names(dfQ) <- paste0("log_",names(dfQ))
   dfModel <- cbind(dfModel,dfQ)
+  
   
   
   ##----------------------------------##
@@ -96,7 +97,12 @@ process_Racine <- function(df) {
   dfMaxRows <- na.omit(dfMaxRows)
   
   #Convert character variables into numeric categories
-
+      #Discharge categories
+  # Q_cat_variables <- which(names(dfModel) %in% c("EOF.Discharge","IEB.Discharge" ))
+  # dfMaxRows$EOF.Discharge <- toTitleCase(dfMaxRows$EOF.Discharge)
+  # dfMaxRows$IEB.Discharge <- toTitleCase(dfMaxRows$IEB.Discharge)
+  # 
+  
       #Water Clarity
   WaterClarity <- c(1:5)
   names(WaterClarity) <- c("Clear","Turbid","Slightly turbid","Very Turbid","Opaque")

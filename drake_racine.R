@@ -10,7 +10,7 @@ source("20_process_data/src/process_Racine.R")
 plan <- drake_plan(
   dfNB = read.csv(file_in("10_load_data/raw/Racine/North Beach Historical Database 1995-2016, COMBINED EDIT.csv"),
                   stringsAsFactors = FALSE, 
-                  na.strings = c('NR','#N/A', 'NC', 'No Data','N/A')),
+                  na.strings = c('NR','#N/A', 'NC', 'No Data','N/A','NA')),
   
   dfNBIVs = read.csv(file_in("10_load_data/raw/Racine/IVs.csv"),stringsAsFactors = FALSE),
   
