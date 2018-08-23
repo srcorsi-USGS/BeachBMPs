@@ -44,7 +44,8 @@ model_beach_wq_change <- function(df,response,beginIV,endIV){
 }
 
 c1<-coef(g1, s='lambda.min')
-c1.1se <- coef(g1,s='lambda.1se')
+c1.1se <- coef(g1,s='lambda.1se')n
+
 beta<-which(abs(c1)>0)[-1]-1
 beta.1se <- which(abs(c1.1se)>0)[-1]-1
 testvars.orig <- colnames(matIVs)[beta]
