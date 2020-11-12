@@ -42,7 +42,7 @@ rAlfordtoNorth <- df$alford/df$Ecoli
 
 par (mfrow=c(3,1), mar = c(1,5,0,1), oma = c(5,0,4,1))
 boxplot(alford ~ year,data = df,log = "y", xaxt = "n", ylab = "Alford")
-mtext ("E coli concentratons at Alford, North Beach, and the ratio of the two",line = 1)
+mtext ("E coli concentratons at Alford, North Beach (for matching dates), and the Ratio of the Two",line = 1)
 boxplot(Ecoli ~ year,data = df,log = "y", xaxt = "n", ylab = "North Beach" )
 
 boxplot(rAlfordtoNorth~df$year,log = "y", ylab = "Ratio Alford/North Beach")

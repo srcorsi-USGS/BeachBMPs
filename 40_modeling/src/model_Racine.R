@@ -67,26 +67,26 @@ abline(h=log10(100),v=log10(235))
 # save(list=ls(),file="workspace.RData")
 
 ## try stepwise
-df$response <- log10(df$Ecoli)
-
-
-m <- lm(response ~ 1,data = df)
-summary (m)
-
-form <- formula(paste("response ~",paste(IVs,collapse = " + ")))
-
-mstep <- step(m,scope = form,k=log(dim(df)[1]))
-
-summary(mstep)
-
-plot(df$response~predict(mstep))
-df$resids <- residuals(mstep)
-
-transition <- as.POSIXct(c("2011-01-02"))
-df$prepost <- ifelse(df$pdate < transition,"pre","post")
-
-boxplot(resids~prepost,data = df)
-
+# df$response <- log10(df$Ecoli)
+# 
+# 
+# m <- lm(response ~ 1,data = df)
+# summary (m)
+# 
+# form <- formula(paste("response ~",paste(IVs,collapse = " + ")))
+# 
+# mstep <- step(m,scope = form,k=log(dim(df)[1]))
+# 
+# summary(mstep)
+# 
+# plot(df$response~predict(mstep))
+# df$resids <- residuals(mstep)
+# 
+# transition <- as.POSIXct(c("2011-01-02"))
+# df$prepost <- ifelse(df$pdate < transition,"pre","post")
+# 
+# boxplot(resids~prepost,data = df)
+# 
 
 # Test different pre post periods
 
@@ -116,7 +116,9 @@ for(i in 1:2){
                               pdate > testPeriod[2] & pdate < testPeriod[3] ~ "Transition",
                               pdate > testPeriod[3] & pdate < testPeriod[4] ~ "Post"))
   subdf$period <- factor(subdf$period,levels = c("Pre","Transition","Post"))
-  boxplot(resids~period,data = subdf,ylab = "Residuals", 
+  
+  par(mar = c(5,5,3,1))
+  boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)",
           main = paste0("Pre = ",testPeriod[1]," - ",testPeriod[2],"; Post = ",testPeriod[3]," - ", testPeriod[4]))
   pre <- subdf[subdf$period == "Pre","resids"]
   post <- subdf[subdf$period == "Post","resids"]
@@ -133,3 +135,8 @@ for(i in 1:2){
 
 TestResult <- rbind(TestResult_list[[1]],TestResult_list[[2]])
 wilcox_results
+
+df$year <- as.POSIXlt(df$pdate)$year + 1900
+
+boxplot(Ecoli~year,data = df,log = "y", ylab = "E. coli (cfu/100mL)",
+        main = "North Beach E. coli concentrations by Year")
