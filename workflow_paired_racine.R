@@ -27,11 +27,11 @@ alford <- alford.orig %>%
   summarize(alford = mean(alford),alford.rmk = paste(unique(alford.rmk),sep = "|"),
             alford.units = paste(unique(alford.units),sep = "|"), n = length(alford))
 
-dfRacine$pdate <- as.Date(dfRacine$pdate,format = "%m/%d/%Y")
-df <- left_join(alford,dfRacine) %>%
+dfModel$pdate <- as.Date(dfModel$pdate,format = "%m/%d/%Y")
+df <- left_join(alford,dfModel) %>%
   filter(!is.na(Ecoli))
 alford$pdate
-dfRacine$pdate
+dfModel$pdate
 
 plot(df$Ecoli ~ df$pdate, log = "y")
 points(df$alford ~ df$pdate, col = "blue",pch = 20)
@@ -53,11 +53,23 @@ df$prepost <- ifelse(df$year < breakYear,"pre", "post")
 
 
 par(mfrow = c(1,1),mar = c(5,3,3,2),oma = c(0,0,0,0))
+plot(log10(df$alford),log10(df$Ecoli),xlab = "Alford",ylab = "North Beach",col = )
+mlog <- lm(log10(Ecoli) ~ log10(alford), data = df)
+summary(mlog)
+abline(1.05,0.31)
+df$residuals <- residuals(m) 
+boxplot(residuals~prepost,data = df,ylim = c(-500,500))
+
+
+par(mfrow = c(1,1),mar = c(5,5,3,2),oma = c(0,0,0,0))
 plot(df$alford,df$Ecoli,log = "xy",xlab = "Alford",ylab = "North Beach",col = )
 abline(0.178,115)
 abline(0,1)
+abline(lm(Ecoli ~ alford, data = df))
+abline(120,0.179)
 m <- lm(Ecoli ~ alford, data = df)
 summary(m)
+summary(mlog)
 df$residuals <- residuals(m) 
 df$predictions <- predict(m)
 boxplot(residuals ~ year,data = df,log="y")

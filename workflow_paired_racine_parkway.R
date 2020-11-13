@@ -46,9 +46,10 @@ boxplot(Ecoli ~ year,data = df,log = "y", xaxt = "n")
 
 boxplot(rparkwaytoNorth~df$year,log = "y")
 
-par(mfrow = c(1,1),mar = c(5,3,3,2),oma = c(0,0,0,0))
-plot(df$parkway,df$Ecoli,log = "xy",xlab = "parkway",ylab = "North Beach")
-abline(0.178,115)
+par(mfrow = c(1,1),mar = c(5,5,3,2),oma = c(0,0,0,0))
+plot(df$parkway,df$Ecoli,log = "xy",xlab = "parkway",ylab = "North Beach",
+     main = "Comparison of North Beach to Parkway E. coli Concentrations")
+
 abline(0,1)
 m <- lm(Ecoli ~ parkway, data = df)
 summary(m)

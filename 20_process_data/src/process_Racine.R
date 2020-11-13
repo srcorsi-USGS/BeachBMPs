@@ -5,7 +5,7 @@
 
 process_Racine <- function(df) {
   # ## Add perpendicular and parallel currents and wind components
-
+  
   response <- "Ecoli"
   beachAngle <- 338.55
   
@@ -22,7 +22,7 @@ process_Racine <- function(df) {
     dfModel <- rotatecoords(df = dfModel,east = paste0(velocities[i],"East"),north = paste0(velocities[i],"North"),orientation = beachAngle,circle = 360,name = velocities[i])
   }
   
- 
+  
   #------------------------------------------------------
   
   ## Add perpendicular and parallel currents
@@ -50,11 +50,11 @@ process_Racine <- function(df) {
   dfModel <- temp
   
   #remove directional vectors in favor of perp and parl variables
-
+  
   removeCols <- grep("Eastward|Northward|speed|Direction|Air.Velocity",
-       names(dfModel),ignore.case = TRUE)
+                     names(dfModel),ignore.case = TRUE)
   dfModel <- dfModel[,-removeCols]
-
+  
   
   ## end adding perpendicular and parallel currents ##
   
@@ -62,13 +62,13 @@ process_Racine <- function(df) {
   dfModel$jday <- as.POSIXlt(dfModel$pdate)$yday+1
   
   # Add transformations
-    #SQRT Rain
+  #SQRT Rain
   Rain_variables <- grep("precip|Precip",names(dfModel))
   dfRain <- sqrt(dfModel[,Rain_variables])
   names(dfRain) <- paste0("sqrt_",names(dfRain))
   dfModel <- cbind(dfModel,dfRain)
   
-    #log Q
+  #log Q
   Q_variables <- grep("cubic",names(dfModel),ignore.case = TRUE)
   dfQ <- log10(dfModel[,Q_variables])
   names(dfQ) <- paste0("log_",names(dfQ))
@@ -81,41 +81,43 @@ process_Racine <- function(df) {
   ## Reduce to 2006 and after for pre-post analysis
   
   df <- dfModel[which(!is.na(dfModel[,response])),] #remove rows without E coli
-
+  
   preDates <- as.POSIXct(c("2006-01-02","2011-01-02"))
   postDates <- as.POSIXct(c("2011-01-02","2016-10-02"))
-#  df <- subset(df,pdate>preDates[1])
+  #  df <- subset(df,pdate>preDates[1])
   df$period <- ifelse(df$pdate < preDates[2],"pre","post")
   df$period <- ifelse(df$pdate >postDates[1] & df$pdate < postDates[2],"during",df$period)
-  df <- df[df$pdate>preDates[1],]
+  #df <- df[df$pdate>preDates[1],]
   # focus on critical variables for modeling.
-
-
+  
+  
   naCols <- apply(df,MARGIN = 2, function(x) sum(is.na(x)) > 0)
   dfMaxRows <- df[,colSums(is.na(df)) <= nrow(df)*0.05]  #Remove columns with more than 5% NAs
-  
-  dfMaxRows <- na.omit(dfMaxRows)
+  dfMaxRows <- dfMaxRows[,-which(names(dfMaxRows)=="Adjusted.Gull.Count")] # Removed due to many missing values in the pre period and no apparent relation to E coli.
+    dfMaxRows <- na.omit(dfMaxRows)
   
   #Convert character variables into numeric categories
-      #Discharge categories
+  #Discharge categories
   # Q_cat_variables <- which(names(dfModel) %in% c("EOF.Discharge","IEB.Discharge" ))
   # dfMaxRows$EOF.Discharge <- toTitleCase(dfMaxRows$EOF.Discharge)
   # dfMaxRows$IEB.Discharge <- toTitleCase(dfMaxRows$IEB.Discharge)
   # 
   
-      #Water Clarity
-  WaterClarity <- c(1:5)
-  names(WaterClarity) <- c("Clear","Turbid","Slightly turbid","Very Turbid","Opaque")
-  dfMaxRows$Water.Clarity <- WaterClarity[dfMaxRows$Water.Clarity]
-
-      #Algae
-  dfMaxRows$Algae.on.Beach <- toTitleCase(dfMaxRows$Algae.on.Beach)
-  dfMaxRows$Algae.in.Nearshore.Water <- toTitleCase(dfMaxRows$Algae.in.Nearshore.Water)
-  Algae <- 1:4
-  names(Algae) <- c("None","Low","Moderate","High")
-  dfMaxRows$Algae.on.Beach <- Algae[dfMaxRows$Algae.on.Beach]
-  dfMaxRows$Algae.in.Nearshore.Water <- Algae[dfMaxRows$Algae.in.Nearshore.Water]
-  
+  #Water Clarity
+  if("Water.Clarity" %in% names(dfMaxRows)){
+    WaterClarity <- c(1:5)
+    names(WaterClarity) <- c("Clear","Turbid","Slightly turbid","Very Turbid","Opaque")
+    dfMaxRows$Water.Clarity <- WaterClarity[dfMaxRows$Water.Clarity]
+  }
+  #Algae
+  if("Algae.on.Beach" %in% names(dfMaxRows)){
+    dfMaxRows$Algae.on.Beach <- toTitleCase(dfMaxRows$Algae.on.Beach)
+    dfMaxRows$Algae.in.Nearshore.Water <- toTitleCase(dfMaxRows$Algae.in.Nearshore.Water)
+    Algae <- 1:4
+    names(Algae) <- c("None","Low","Moderate","High")
+    dfMaxRows$Algae.on.Beach <- Algae[dfMaxRows$Algae.on.Beach]
+    dfMaxRows$Algae.in.Nearshore.Water <- Algae[dfMaxRows$Algae.in.Nearshore.Water]
+  }
   return(dfMaxRows)
   
 }
