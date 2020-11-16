@@ -49,8 +49,8 @@ response <- "Ecoli"
 beginIV <- which(names(df)=="Ecoli")+1
 endIV <- dim(df)[2]-1
 
-bdate <- as.POSIXct("2006-01-01")
-edate <- as.POSIXct("2010-01-01")
+bdate <- as.POSIXct("1997-01-01")
+edate <- as.POSIXct("2010-12-01")
 
 modelRows <- which(df$pdate >= bdate & df$pdate <= edate)
 #model_beach_wq_change <- function(df,response,beginIV,endIV){
@@ -109,7 +109,8 @@ abline(h=log10(100),v=log10(235))
 
 DataTestPeriod <- list(as.POSIXct(c("1997-01-01","2000-09-30","2004-12-31","2010-01-01")),
                        as.POSIXct(c("2010-01-01","2013-12-31","2014-01-01","2017-01-01")),
-                       as.POSIXct(c("2005-01-01","2007-12-31","2011-12-31","2013-12-31")))
+                       as.POSIXct(c("2005-01-01","2007-12-31","2016-12-31","2019-12-31")),
+                       as.POSIXct(c("1997-01-01","2000-12-31","2015-12-31","2019-12-31")))
 TestResult_list <- list()
 wilcox_results <- numeric()
 t.test_results <- numeric()
@@ -120,7 +121,6 @@ subModeldf <- list()
 for(i in 1:length(DataTestPeriod)){
   testPeriod <- DataTestPeriod[[i]]
   subdf <- subset(df,pdate > testPeriod[1] & pdate < testPeriod[4])
-  subModeldf[[i]] <- subdf
   
     m <- lm(response ~ 1,data = subdf)
   summary (m)
@@ -161,11 +161,13 @@ for(i in 1:length(DataTestPeriod)){
               mean_resid = mean(resids),
               n = length(Ecoli))
   TestResult_list[[i]]$testperiod <- paste(testPeriod[1],"-",testPeriod[4])
+  subModeldf[[i]] <- subdf
   
 }
 
 TestResult <- rbind(TestResult_list[[1]],TestResult_list[[2]]) %>%
-  rbind(TestResult_list[[3]])
+  rbind(TestResult_list[[3]]) %>%
+  rbind(TestResult_list[[4]])
 wilcox_results
 t.test_results
 r2_values
@@ -183,29 +185,34 @@ df$year <- as.POSIXlt(df$pdate)$year + 1900
 boxplot(Ecoli~year,data = df,log = "y", ylab = "E. coli (cfu/100mL)",
         main = "North Beach E. coli concentrations by Year")
 
-#Final models
+############Final models###############
 
+## 1 ##
 # 1998-2010 analysis
 # examining the model variables, two of them do not make logical sense given the sign of the coefficients. Removing 
 # those results in the following model:
-testPeriod <- DataTestPeriod[[4]]
+i <- 1
 
-model_vars <- names(coef(models[[4]]))[-c(1,7,8)]
+testPeriod <- DataTestPeriod[[i]]
+
+summary(models[[1]]) # remove 1-flow and 1-rain variable with negative coefficients
+model_vars <- names(coef(models[[i]]))[-c(1,7,8)]
 
 form <- formula(paste("response ~",paste(model_vars,collapse = " + ")))
-subdf <- subModeldf[[4]]
+subdf <- subModeldf[[i]]
 m <- lm(response ~ 1,data = subdf)
 m4 <- step(m,scope = form)
 summary(m4)
 
-plot(subdf$response~predict(mstep))
-subdf$resids <- residuals(mstep)
+plot(subdf$response~predict(m4))
+subdf$resids <- residuals(m4)
 
 subdf <- subdf %>%
   mutate(period = case_when(pdate > testPeriod[1] & pdate < testPeriod[2] ~ "Pre",
                             pdate > testPeriod[2] & pdate < testPeriod[3] ~ "Transition",
                             pdate > testPeriod[3] & pdate < testPeriod[4] ~ "Post"))
 subdf$period <- factor(subdf$period,levels = c("Pre","Transition","Post"))
+subModeldf[[i]] <- subdf
 
 par(mar = c(5,5,3,1))
 boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)",
@@ -215,10 +222,38 @@ post <- subdf[subdf$period == "Post","resids"]
 wilcox.test(pre,post,paired = FALSE)
 t.test(pre,post)
 
-early_period_results <- subdf %>%
+model_1_results <- subdf %>%
   group_by(period) %>%
   summarize(medianEC = median(Ecoli),
             median_resid = median(resids),
             meanEC = mean(Ecoli),
             mean_resid = mean(resids),
             n = length(Ecoli))
+model_1_results$testperiod <- paste(testPeriod[1],"-",testPeriod[4])
+
+
+TestResult <- rbind(model_1_results,TestResult_list[[2]]) %>%
+  rbind(TestResult_list[[3]]) %>%
+  rbind(TestResult_list[[4]])
+
+
+
+#
+
+dfResid <- subModeldf[[1]][,c("resids","period")]
+dfResid$Time_period <- "Period 1"
+for(i in 2:4) {
+ temp <- subModeldf[[i]][,c("resids","period")]
+ temp$Time_period <- paste("Period",i)
+ dfResid <- rbind(dfResid,temp)
+}
+
+library(ggplot2)
+
+ggplot(dfResid,aes(x=period,y=resids)) +
+  geom_boxplot() +
+  facet_wrap(vars(Time_period),nrow = 2) +
+  ggtitle("Residuals for Pre, Transition, and Post Periods for Management Effectiveness Evaluation")
+
+boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)",
+        main = paste0("Pre = ",testPeriod[1]," - ",testPeriod[2],"; Post = ",testPeriod[3]," - ", testPeriod[4]))
