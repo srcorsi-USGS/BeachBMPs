@@ -5,7 +5,7 @@
 
 process_63rd <- function(df63rd) {
   # ## Add perpendicular and parallel wind components
-
+  
   response <- "Ecoli"
   beachAngle <- 27- 90
   
@@ -22,7 +22,7 @@ process_63rd <- function(df63rd) {
     dfModel <- rotatecoords(df = dfModel,east = paste0(velocities[i],"East"),north = paste0(velocities[i],"North"),orientation = beachAngle,circle = 360,name = velocities[i])
   }
   
- 
+  
   #------------------------------------------------------
   
   ## Add perpendicular and parallel currents
@@ -57,15 +57,15 @@ process_63rd <- function(df63rd) {
   ## Reduce to 2006 and after for pre-post analysis
   
   df <- dfModel[which(!is.na(dfModel[,response])),] #remove rows without E coli
-
+  
   preDates <- as.POSIXct(c("2006-01-02","2010-01-02"))
   postDates <- as.POSIXct(c("2010-01-02","2016-01-02"))
-#  df <- subset(df,pdate>preDates[1])
+  #  df <- subset(df,pdate>preDates[1])
   df$period <- ifelse(df$pdate < preDates[2],"pre","post")
   df$period <- ifelse(df$pdate >postDates[1] & df$pdate < postDates[2],"during",df$period)
   df <- df[df$pdate>preDates[1],]
   # focus on critical variables for modeling.
-
+  
   #remove Chicago weather variables in favor of Calumet weather
   df <- df[,-grep("CH",names(df))]
   naCols <- apply(df,MARGIN = 2, function(x) sum(is.na(x)) > 0)

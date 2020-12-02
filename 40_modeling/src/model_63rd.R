@@ -2,48 +2,22 @@
 # 63rd Street beach
 
 library(glmnet)
+library(tidyverse)
+library(tools)
 
-df63rd <- make("df63rd")
+# df63rd Data file from workflow_63rd.R
 
+df63rd <- df63rd
 
-## Add perpendicular and parallel wind components
-source("./20_process_data/src/fxn_cart2polar_polar2cart_df.R")
+# Read Calumet data
+source(file.path("10_load_data","src","get_Calumet_data.R"))
+names(cal)
+cal <- cal %>%
+  rename(Date = Date, Calumet = RESULT_VALUE) %>%
+  select(Date, Calumet)
 
-velocities <- c("CMT.WdSpd4", "CMT.WdSpd6", "CMT.WdGst4", "CMT.WdGst6")
-directions <- c("CMT.WdDir4", "CMT.WdDir6", "CMT.WdDir4", "CMT.WdDir6")
-
-dfModel <- df63rd
-for (i in 1:length(velocities)){
-  
-  dfModel <- polar2cart(dfModel,r = velocities[i], th = directions[i], circle = 360,
-                        x= paste0(velocities[i],"Perp"),y=paste0(velocities[i],"Parl"))
-}
-
-currentE <- c("GL.E.WtrVelSur4", "GL.E.WtrVelSur6", "GL.E.WtrVelDA4", "GL.E.WtrVelDA6")
-currentN <- c("GL.N.WtrVelSur4", "GL.N.WtrVelSur6", "GL.N.WtrVelDA4", "GL.N.WtrVelDA6")
-currentNames <- c("Sur4","Sur6","DA4","DA6")
-beachAngle <- 27
-
-temp <- dfModel
-for (i in 1:length(currentE)) {
-  varNamesOrig <- names(temp)
-  r <- paste0(currentNames[i],"Spd")
-  th <- paste0(currentNames[i],"dir")
-  PerpName <- paste0(currentNames[i],"Perp")
-  ParlName <- paste0(currentNames[i],"Parl")
-  #test <- rotatecoords(df = dfModel,east = currentE[i],north = currentN[i],orientation = 27,circle = 360,name = currentNames[i])
-  temp <- cart2polar(df=temp,x=currentE[i],y=currentN[i],
-                    r=r,th = th,circle=360)
-  temp[,th] <- temp[,th] - beachAngle
-  temp <- polar2cart(df=temp,r = r,th = th,circle=360,
-                     x=PerpName,y=ParlName)
-  temp <- temp[,c(varNamesOrig,PerpName,ParlName)]
-
-}
-dfModel <- temp
-
-
-
+# Combine the two beach data sets
+dfModel <- left_join(df63rd,cal)
 
 #######(((((((########
 #reduce to data set for modeling and define pre, during, and post periods
@@ -51,63 +25,220 @@ dfModel <- temp
 response <- "Ecoli"
 df <- dfModel[which(!is.na(dfModel[,response])),] #remove rows without E coli
 
-preDates <- as.POSIXct(c("2006-01-02","2010-01-02"))
-postDates <- as.POSIXct(c("2010-01-02","2016-01-02"))
-df <- subset(df,pdate>preDates[1])
-df$period <- ifelse(df$pdate < preDates[2],"pre","post")
-df$period <- ifelse(df$pdate >postDates[1] & df$pdate < postDates[2],"during",df$period)
-
-# focus on critical variables for modeling.
-
-#remove Chicago weather variables in favor of Calumet weather
-df <- df[,-grep("CH",names(df))]
-names(df)
-IVcount <- apply(df,MARGIN = 1,function(x)sum(!is.na(x)))
-Obscount <- apply(df,MARGIN = 2,function(x)sum(!is.na(x)))
-dfMaxRows <- df[,colSums(is.na(df)) <= nrow(df)*0.05]  #Remove columns with more than 20% NAs
-
-# Explore number of IVs available for each observation over the years
-
-plot(df$pdate,IVcount,xlab="",ylab="")
-mtext("Independent variable availability",side=2,line=2.5,cex=1.5,font=2)
-mtext("Date",side=1,line=3,cex=1.5,font=2)
-mtext("63rd St: Independent Variables Available for E. coli observations",side = 3, line = 2,font = 2, cex = 1.5)
-
 df <- na.omit(df)
-
 #######)))))))########
 
-# 
-# 
-# 
-# response <- "Ecoli"
-# beginIV <- which(names(df)=="Ecoli")+1
-# endIV <- dim(df)[2]-1
-# 
-# model_beach_wq_change <- function(df,response,beginIV,endIV){
-#   
-#   IVs <- names(df)[beginIV:endIV]
-#   matIVs <- as.matrix(df[,IVs])
-#   colnames(matIVs) <- IVs
-#   y<-log10(df[,response])
-#   
-#   g1<-cv.glmnet(matIVs,y,alpha=1,type.measure="mse",family='gaussian',nlambda=200)
-#   
-# }
-# 
-# c1<-coef(g1, s='lambda.min')
-# c1.1se <- coef(g1,s='lambda.1se')
-# beta<-which(abs(c1)>0)[-1]-1
-# beta.1se <- which(abs(c1.1se)>0)[-1]-1
-# testvars.orig <- c(testvars.orig,colnames(matIVs)[beta])
-# testvars.orig.1se <- c(testvars.orig.1se,colnames(matIVs)[beta.1se])
-# 
-# plot(g1)
-# 
-# 
-# plot(y,predict(g1,newx=matIVs))
-# 
-# 
+
+## LASSO MODELING  ###
+
+
+response <- "Ecoli"
+beginIV <- which(names(df)=="Ecoli")+1
+endIV <- dim(df)[2]
+
+
+  IVs <- names(df)[beginIV:endIV]
+  IVs <- IVs[-which(IVs %in% c("period","year"))]
+  matIVs <- as.matrix(df[,IVs])
+  colnames(matIVs) <- IVs
+  y<-log10(df[,response])
+  
+  g1<-cv.glmnet(matIVs,y,alpha=1,type.measure="mse",family='gaussian',nlambda=200)
+  #g1<-cv.glmnet(matIVs,y,alpha=1,type.measure="mse",family='gaussian',nlambda=200,standardize=FALSE)
+  
+#}
+
+c1<-coef(g1, s='lambda.min')
+c1.1se <- coef(g1,s='lambda.1se')
+
+beta<-which(abs(c1)>0)[-1]-1
+beta.1se <- which(abs(c1.1se)>0)[-1]-1
+testvars.orig <- colnames(matIVs)[beta]
+testvars.orig.1se <- colnames(matIVs)[beta.1se]
+
+plot(g1)
+
+
+plot(y,predict(g1,newx=matIVs))
+abline(0,1)
+abline(h=log10(100),v=log10(235))
+
 # ls()
 # save(list=ls(),file="workspace.RData")
 
+## try stepwise
+# df$response <- log10(df$Ecoli)
+# 
+# 
+# m <- lm(response ~ 1,data = df)
+# summary (m)
+# 
+# form <- formula(paste("response ~",paste(IVs,collapse = " + ")))
+# 
+# mstep <- step(m,scope = form,k=log(dim(df)[1]))
+# 
+# summary(mstep)
+# 
+# plot(df$response~predict(mstep))
+# df$resids <- residuals(mstep)
+# 
+# transition <- as.POSIXct(c("2011-01-02"))
+# df$prepost <- ifelse(df$pdate < transition,"pre","post")
+# 
+# boxplot(resids~prepost,data = df)
+# 
+
+# Test different pre post periods
+
+DataTestPeriod <- list(as.POSIXct(c("2006-01-02","2010-01-02","2010-01-02","2016-01-02")),
+                       as.POSIXct(c("2008-01-02","2010-01-02","2014-01-02","2016-01-02")))
+preDates <- as.POSIXct(c("2006-01-02","2010-01-02"))
+postDates <- as.POSIXct(c("2010-01-02","2016-01-02"))
+
+TestResult_list <- list()
+wilcox_results <- numeric()
+t.test_results <- numeric()
+df$response <- log10(df$Ecoli)
+r2_values <- numeric()
+models <- list()
+subModeldf <- list()
+for(i in 1:length(DataTestPeriod)){
+  testPeriod <- DataTestPeriod[[i]]
+  subdf <- subset(df,pdate > testPeriod[1] & pdate < testPeriod[4])
+  
+    m <- lm(response ~ 1,data = subdf)
+  summary (m)
+  
+  form <- formula(paste("response ~",paste(IVs,collapse = " + ")))
+  
+  mstep <- step(m,scope = form,k=log(dim(subdf)[1]))
+  
+  models[[i]] <- mstep
+  
+  summary(mstep)
+  r2_values <- c(r2_values,summary(mstep)$r.squared)
+  
+  plot(subdf$response~predict(mstep))
+  subdf$resids <- residuals(mstep)
+  
+  transition <- as.POSIXct(c("2011-01-02"))
+  
+  subdf <- subdf %>%
+    mutate(period = case_when(pdate > testPeriod[1] & pdate < testPeriod[2] ~ "Pre",
+                              pdate > testPeriod[2] & pdate < testPeriod[3] ~ "Transition",
+                              pdate > testPeriod[3] & pdate < testPeriod[4] ~ "Post"))
+  subdf$period <- factor(subdf$period,levels = c("Pre","Transition","Post"))
+  
+  par(mar = c(5,5,3,1))
+  boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)",
+          main = paste0("Pre = ",testPeriod[1]," - ",testPeriod[2],"; Post = ",testPeriod[3]," - ", testPeriod[4]))
+  pre <- subdf[subdf$period == "Pre","resids"]
+  post <- subdf[subdf$period == "Post","resids"]
+  wilcox_results <- c(wilcox_results,wilcox.test(pre,post,paired = FALSE)$p.value)
+  t.test_results <- c(t.test_results,t.test(pre,post)$p.value)
+  
+  TestResult_list[[i]] <- subdf %>%
+    group_by(period) %>%
+    summarize(medianEC = median(Ecoli),
+              median_resid = median(resids),
+              meanEC = mean(Ecoli),
+              mean_resid = mean(resids),
+              n = length(Ecoli))
+  TestResult_list[[i]]$testperiod <- paste(testPeriod[1],"-",testPeriod[4])
+  subModeldf[[i]] <- subdf
+  
+}
+
+#TestResult <- TestResult_list[[1]]
+ TestResult <- rbind(TestResult_list[[1]],TestResult_list[[2]])
+#   rbind(TestResult_list[[3]]) %>%
+#   rbind(TestResult_list[[4]])
+wilcox_results
+t.test_results
+r2_values
+
+period1 <- filter(df,pdate < DataTestPeriod[[2]][1])
+period2 <- filter(df,pdate > DataTestPeriod[[2]][2],pdate < DataTestPeriod[[2]][3])
+period3 <- filter(df,pdate > DataTestPeriod[[2]][3])
+
+mean(period1$Ecoli)
+mean(period2$Ecoli)
+mean(period3$Ecoli)
+
+df$year <- as.POSIXlt(df$pdate)$year + 1900
+
+boxplot(Ecoli~year,data = df,log = "y", ylab = "E. coli (cfu/100mL)",
+        main = "63rd E. coli concentrations by Year")
+
+############Final models###############
+
+## 1 ##
+# 1998-2010 analysis
+# examining the model variables, two of them do not make logical sense given the sign of the coefficients. Removing 
+# those results in the following model:
+i <- 1
+
+testPeriod <- DataTestPeriod[[i]]
+
+summary(models[[1]]) # remove 1-flow and 1-rain variable with negative coefficients
+model_vars <- names(coef(models[[i]]))[-c(1,7,8)]
+
+form <- formula(paste("response ~",paste(model_vars,collapse = " + ")))
+subdf <- subModeldf[[i]]
+m <- lm(response ~ 1,data = subdf)
+m4 <- step(m,scope = form)
+summary(m4)
+
+plot(subdf$response~predict(m4))
+subdf$resids <- residuals(m4)
+
+subdf <- subdf %>%
+  mutate(period = case_when(pdate > testPeriod[1] & pdate < testPeriod[2] ~ "Pre",
+                            pdate > testPeriod[2] & pdate < testPeriod[3] ~ "Transition",
+                            pdate > testPeriod[3] & pdate < testPeriod[4] ~ "Post"))
+subdf$period <- factor(subdf$period,levels = c("Pre","Transition","Post"))
+subModeldf[[i]] <- subdf
+
+par(mar = c(5,5,3,1))
+boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)",
+        main = paste0("Pre = ",testPeriod[1]," - ",testPeriod[2],"; Post = ",testPeriod[3]," - ", testPeriod[4]))
+pre <- subdf[subdf$period == "Pre","resids"]
+post <- subdf[subdf$period == "Post","resids"]
+wilcox.test(pre,post,paired = FALSE)
+t.test(pre,post)
+
+model_1_results <- subdf %>%
+  group_by(period) %>%
+  summarize(medianEC = median(Ecoli),
+            median_resid = median(resids),
+            meanEC = mean(Ecoli),
+            mean_resid = mean(resids),
+            n = length(Ecoli))
+model_1_results$testperiod <- paste(testPeriod[1],"-",testPeriod[4])
+
+
+TestResult <- rbind(model_1_results,TestResult_list[[2]]) %>%
+  rbind(TestResult_list[[3]]) %>%
+  rbind(TestResult_list[[4]])
+
+
+
+#
+
+dfResid <- subModeldf[[1]][,c("resids","period")]
+dfResid$Time_period <- "Period 1"
+for(i in 2:4) {
+ temp <- subModeldf[[i]][,c("resids","period")]
+ temp$Time_period <- paste("Period",i)
+ dfResid <- rbind(dfResid,temp)
+}
+
+library(ggplot2)
+
+ggplot(dfResid,aes(x=period,y=resids)) +
+  geom_boxplot() +
+  facet_wrap(vars(Time_period),nrow = 2) +
+  ggtitle("Residuals for Pre, Transition, and Post Periods for Management Effectiveness Evaluation")
+
+boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)",
+        main = paste0("Pre = ",testPeriod[1]," - ",testPeriod[2],"; Post = ",testPeriod[3]," - ", testPeriod[4]))
