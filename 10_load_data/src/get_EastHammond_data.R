@@ -18,3 +18,23 @@ eh <- ibg[grep("hammond",ibg$BEACH_NAME,ignore.case = TRUE),]
 
 #boxplot(RESULT_VALUE+1~year,data = eh, log="y")
 
+par(mar=c(11,4,3,2))
+ncex <- 0.6
+bp <- boxplot(RESULT_VALUE + 1~ANALYSIS_METHOD_TYPE_TEXT ,data = eh,log="y",las=2,xlab = "")
+mtext("n = ", line = 0.1, side = 3,adj=0, cex=ncex)
+mtext(paste(bp$n, sep = ""), at = seq_along(bp$n), line = 0.1, side = 3,cex=ncex)
+
+eh <- eh[which(eh$ANALYSIS_METHOD_TYPE_TEXT %in% unique(eh$ANALYSIS_METHOD_TYPE_TEXT)[1:2]),]
+
+par(mar=c(11,4,3,2))
+ncex <- 0.6
+bp <- boxplot(RESULT_VALUE + 1~ANALYSIS_METHOD_TYPE_TEXT ,data = eh,log="y",las=2,xlab = "")
+mtext("n = ", line = 0.1, side = 3,adj=0, cex=ncex)
+mtext(paste(bp$n, sep = ""), at = seq_along(bp$n), line = 0.1, side = 3,cex=ncex)
+anal.code <- ifelse(eh$ANALYSIS_METHOD_TYPE_TEXT == "",1,2)
+
+plot(eh$Date,anal.code)
+year <- as.POSIXlt(eh$Date)$year + 1900
+
+boxplot(eh$RESULT_VALUE+1~year,log="y")
+

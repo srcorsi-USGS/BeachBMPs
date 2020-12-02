@@ -15,11 +15,15 @@ source(file.path("10_load_data","src","get_EastHammond_data.R"))
 names(cal)
 cal <- cal %>%
   rename(Date = Date, Calumet = RESULT_VALUE) %>%
-  select(Date, Calumet)
+  select(Date, Calumet) %>%
+  group_by(Date) %>%
+  summarize(Calumet = mean(Calumet))
 
 eh <- eh %>%
   rename(Date = Date, EastHammond = RESULT_VALUE) %>%
-  select(Date, EastHammond)
+  select(Date, EastHammond) %>%
+  group_by(Date) %>%
+  summarize(EastHammond = mean(EastHammond))
 
 # Combine the two beach data sets
 dfModel <- left_join(df63rd,cal) %>%
@@ -45,6 +49,7 @@ endIV <- dim(df)[2]
 
   IVs <- names(df)[beginIV:endIV]
   IVs <- IVs[-which(IVs %in% c("period","year"))]
+  # IVs <- c("Calumet","EastHammond") # for paired beach without environmental variables
   matIVs <- as.matrix(df[,IVs])
   colnames(matIVs) <- IVs
   y<-log10(df[,response])
