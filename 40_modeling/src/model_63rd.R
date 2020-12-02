@@ -9,15 +9,21 @@ library(tools)
 
 df63rd <- df63rd
 
-# Read Calumet data
+# Read Calumet and East Hammond data
 source(file.path("10_load_data","src","get_Calumet_data.R"))
+source(file.path("10_load_data","src","get_EastHammond_data.R"))
 names(cal)
 cal <- cal %>%
   rename(Date = Date, Calumet = RESULT_VALUE) %>%
   select(Date, Calumet)
 
+eh <- eh %>%
+  rename(Date = Date, EastHammond = RESULT_VALUE) %>%
+  select(Date, EastHammond)
+
 # Combine the two beach data sets
-dfModel <- left_join(df63rd,cal)
+dfModel <- left_join(df63rd,cal) %>%
+  left_join(eh)
 
 #######(((((((########
 #reduce to data set for modeling and define pre, during, and post periods
