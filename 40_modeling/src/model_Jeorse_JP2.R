@@ -1,13 +1,18 @@
 # Develop model and test for differences in water quality for beaches
-# 63rd Street beach
+# Jeorse Street beach
 
 library(glmnet)
 library(tidyverse)
 library(tools)
 
-# df63rd Data file from workflow_63rd.R
+# Jeorse Data files from workflow_Jeorse.R
 
-df63rd <- df63rd
+# Two sampling points at Jeorse will be modeled separately
+
+JP2 <- JP2
+
+JP2 <- JP2 %>%
+  rename(Ecoli = EC)
 
 # Read Calumet and East Hammond data
 source(file.path("10_load_data","src","get_Calumet_data.R"))
@@ -26,8 +31,10 @@ eh <- eh %>%
   summarize(EastHammond = mean(EastHammond))
 
 # Combine the two beach data sets
-dfModel <- left_join(df63rd,cal) %>%
+dfModel <- left_join(JP2,cal) %>%
   left_join(eh)
+
+
 
 #######(((((((########
 #reduce to data set for modeling and define pre, during, and post periods
@@ -35,10 +42,12 @@ dfModel <- left_join(df63rd,cal) %>%
 response <- "Ecoli"
 df <- dfModel[which(!is.na(dfModel[,response])),] #remove rows without E coli
 
-DataTestPeriod <- list(as.POSIXct(c("2006-01-02","2010-01-02","2010-01-02","2016-10-02")),
-                       as.POSIXct(c("2008-01-02","2010-01-02","2014-01-02","2016-10-02")))
+DataTestPeriod <- list(as.POSIXct(c("2013-05-01","2014-10-01","2016-05-01","2017-10-01")))
+#                       as.POSIXct(c("2008-01-02","2010-01-02","2014-01-02","2016-01-02")))
 
+df <- subset(df,pdate < as.POSIXct("2013-01-01") | pdate > as.POSIXct("2014-01-01"))
 df <- subset(df,pdate > DataTestPeriod[[1]][1] & pdate < DataTestPeriod[[1]][4])
+df$Ecoli <- ifelse(df$Ecoli > 4000,4000,df$Ecoli)
 
 df <- na.omit(df)
 #######)))))))########
@@ -52,16 +61,16 @@ beginIV <- which(names(df)=="Ecoli")+1
 endIV <- dim(df)[2]
 
 
-  IVs <- names(df)[beginIV:endIV]
-  IVs <- IVs[-which(IVs %in% c("period","year"))]
-  # IVs <- c("Calumet","EastHammond") # for paired beach without environmental variables
-  matIVs <- as.matrix(df[,IVs])
-  colnames(matIVs) <- IVs
-  y<-log10(df[,response])
-  
-  g1<-cv.glmnet(matIVs,y,alpha=1,type.measure="mse",family='gaussian',nlambda=200)
-  #g1<-cv.glmnet(matIVs,y,alpha=1,type.measure="mse",family='gaussian',nlambda=200,standardize=FALSE)
-  
+IVs <- names(df)[beginIV:endIV]
+IVs <- IVs[-which(IVs %in% c("period","year"))]
+# IVs <- c("Calumet","EastHammond") # for paired beach without environmental variables
+matIVs <- as.matrix(df[,IVs])
+colnames(matIVs) <- IVs
+y<-log10(df[,response])
+
+g1<-cv.glmnet(matIVs,y,alpha=1,type.measure="mse",family='gaussian',nlambda=200)
+#g1<-cv.glmnet(matIVs,y,alpha=1,type.measure="mse",family='gaussian',nlambda=200,standardize=FALSE)
+
 #}
 
 c1<-coef(g1, s='lambda.min')
@@ -80,11 +89,6 @@ abline(0,1)
 abline(h=log10(100),v=log10(235))
 
 
-# Test different pre post periods
-
-DataTestPeriod <- list(as.POSIXct(c("2006-01-02","2010-01-02","2010-01-02","2016-10-02")),
-                       as.POSIXct(c("2008-01-02","2010-01-02","2014-01-02","2016-10-02")))
-
 TestResult_list <- list()
 wilcox_results <- numeric()
 t.test_results <- numeric()
@@ -93,8 +97,8 @@ r2_values <- numeric()
 models <- list()
 subModeldf <- list()
 
-filenm <- "63rd_residual_boxplots.pdf"
-beach <- "63rd"
+filenm <- "Jeorse2_residual_boxplots.pdf"
+beach <- "Jeorse2"
 
 pdf(file = filenm)
 for(i in 1:length(DataTestPeriod)){
@@ -155,17 +159,22 @@ dev.off()
 shell.exec(filenm)
 
 
+
+
+
+
+
 #TestResult <- TestResult_list[[1]]
- TestResult <- rbind(TestResult_list[[1]],TestResult_list[[2]])
+TestResult <- rbind(TestResult_list[[1]],TestResult_list[[2]])
 #   rbind(TestResult_list[[3]]) %>%
 #   rbind(TestResult_list[[4]])
 wilcox_results
 t.test_results
 r2_values
 
-period1 <- filter(df,pdate < DataTestPeriod[[2]][1])
-period2 <- filter(df,pdate > DataTestPeriod[[2]][2],pdate < DataTestPeriod[[2]][3])
-period3 <- filter(df,pdate > DataTestPeriod[[2]][3])
+period1 <- filter(df,pdate < DataTestPeriod[[1]][2])
+period2 <- filter(df,pdate > DataTestPeriod[[1]][2],pdate < DataTestPeriod[[1]][3])
+period3 <- filter(df,pdate > DataTestPeriod[[1]][3])
 
 mean(period1$Ecoli)
 mean(period2$Ecoli)
@@ -174,7 +183,13 @@ mean(period3$Ecoli)
 df$year <- as.POSIXlt(df$pdate)$year + 1900
 
 boxplot(Ecoli~year,data = df,log = "y", ylab = "E. coli (cfu/100mL)",
-        main = "63rd E. coli concentrations by Year")
+        main = "Jeorse E. coli concentrations by Year")
+
+summary(mstep)
+
+
+
+
 
 ############Final models###############
 
@@ -234,9 +249,9 @@ TestResult <- rbind(model_1_results,TestResult_list[[2]]) %>%
 dfResid <- subModeldf[[1]][,c("resids","period")]
 dfResid$Time_period <- "Period 1"
 for(i in 2:4) {
- temp <- subModeldf[[i]][,c("resids","period")]
- temp$Time_period <- paste("Period",i)
- dfResid <- rbind(dfResid,temp)
+  temp <- subModeldf[[i]][,c("resids","period")]
+  temp$Time_period <- paste("Period",i)
+  dfResid <- rbind(dfResid,temp)
 }
 
 library(ggplot2)

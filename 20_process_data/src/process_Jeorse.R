@@ -1,9 +1,8 @@
 # Add perpendicular and parallel vectors components for wind and current
 
 
-# df63rd <- make("df63rd")
 
-process_Jeorse <- function(df63rd) {
+process_Jeorse <- function(dfJeorse) {
   # ## Add perpendicular and parallel wind components
 
   response <- "EC"

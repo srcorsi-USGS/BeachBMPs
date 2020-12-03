@@ -1,13 +1,18 @@
 # Develop model and test for differences in water quality for beaches
-# 63rd Street beach
+# Jeorse Street beach
 
 library(glmnet)
 library(tidyverse)
 library(tools)
 
-# df63rd Data file from workflow_63rd.R
+# Jeorse Data files from workflow_Jeorse.R
 
-df63rd <- df63rd
+# Two sampling points at Jeorse will be modeled separately
+
+JP1 <- JP1
+
+JP1 <- JP1 %>%
+  rename(Ecoli = EC)
 
 # Read Calumet and East Hammond data
 source(file.path("10_load_data","src","get_Calumet_data.R"))
@@ -26,7 +31,7 @@ eh <- eh %>%
   summarize(EastHammond = mean(EastHammond))
 
 # Combine the two beach data sets
-dfModel <- left_join(df63rd,cal) %>%
+dfModel <- left_join(JP1,cal) %>%
   left_join(eh)
 
 #######(((((((########
@@ -35,10 +40,12 @@ dfModel <- left_join(df63rd,cal) %>%
 response <- "Ecoli"
 df <- dfModel[which(!is.na(dfModel[,response])),] #remove rows without E coli
 
-DataTestPeriod <- list(as.POSIXct(c("2006-01-02","2010-01-02","2010-01-02","2016-10-02")),
-                       as.POSIXct(c("2008-01-02","2010-01-02","2014-01-02","2016-10-02")))
+DataTestPeriod <- list(as.POSIXct(c("2012-05-01","2014-10-01","2016-05-01","2017-10-01")))
+#                       as.POSIXct(c("2008-01-02","2010-01-02","2014-01-02","2016-01-02")))
 
+df <- subset(df,pdate < as.POSIXct("2013-01-01") | pdate > as.POSIXct("2014-01-01"))
 df <- subset(df,pdate > DataTestPeriod[[1]][1] & pdate < DataTestPeriod[[1]][4])
+df$Ecoli <- ifelse(df$Ecoli > 4000,4000,df$Ecoli)
 
 df <- na.omit(df)
 #######)))))))########
@@ -82,9 +89,6 @@ abline(h=log10(100),v=log10(235))
 
 # Test different pre post periods
 
-DataTestPeriod <- list(as.POSIXct(c("2006-01-02","2010-01-02","2010-01-02","2016-10-02")),
-                       as.POSIXct(c("2008-01-02","2010-01-02","2014-01-02","2016-10-02")))
-
 TestResult_list <- list()
 wilcox_results <- numeric()
 t.test_results <- numeric()
@@ -93,8 +97,8 @@ r2_values <- numeric()
 models <- list()
 subModeldf <- list()
 
-filenm <- "63rd_residual_boxplots.pdf"
-beach <- "63rd"
+filenm <- "Jeorse1_residual_boxplots.pdf"
+beach <- "Jeorse1"
 
 pdf(file = filenm)
 for(i in 1:length(DataTestPeriod)){
@@ -106,7 +110,7 @@ for(i in 1:length(DataTestPeriod)){
                               pdate > testPeriod[3] & pdate < testPeriod[4] ~ "Post"))
   subdf$period <- factor(subdf$period,levels = c("Pre","Transition","Post"))
   subdf$plotColors <- as.numeric(subdf$period) + 1
-  m <- lm(response ~ 1,data = subdf)
+    m <- lm(response ~ 1,data = subdf)
   
   form <- formula(paste("response ~",paste(IVs,collapse = " + ")))
   
@@ -131,7 +135,7 @@ for(i in 1:length(DataTestPeriod)){
   post <- subdf[subdf$period == "Post","resids"]
   wilcox_results <- signif(c(wilcox_results,wilcox.test(pre,post,paired = FALSE)$p.value),2)
   t.test_results <- c(t.test_results,t.test(pre,post)$p.value)
-  
+
   par(mar = c(5,5,3,1))
   bp <- boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)")
   mtext(paste0("Pre = ",testPeriod[1]," - ",testPeriod[2],"; Post = ",testPeriod[3]," - ", testPeriod[4]),line =1)
@@ -155,6 +159,9 @@ dev.off()
 shell.exec(filenm)
 
 
+
+
+
 #TestResult <- TestResult_list[[1]]
  TestResult <- rbind(TestResult_list[[1]],TestResult_list[[2]])
 #   rbind(TestResult_list[[3]]) %>%
@@ -163,9 +170,9 @@ wilcox_results
 t.test_results
 r2_values
 
-period1 <- filter(df,pdate < DataTestPeriod[[2]][1])
-period2 <- filter(df,pdate > DataTestPeriod[[2]][2],pdate < DataTestPeriod[[2]][3])
-period3 <- filter(df,pdate > DataTestPeriod[[2]][3])
+period1 <- filter(df,pdate < DataTestPeriod[[1]][1])
+period2 <- filter(df,pdate > DataTestPeriod[[1]][2],pdate < DataTestPeriod[[1]][3])
+period3 <- filter(df,pdate > DataTestPeriod[[1]][3])
 
 mean(period1$Ecoli)
 mean(period2$Ecoli)
@@ -174,7 +181,7 @@ mean(period3$Ecoli)
 df$year <- as.POSIXlt(df$pdate)$year + 1900
 
 boxplot(Ecoli~year,data = df,log = "y", ylab = "E. coli (cfu/100mL)",
-        main = "63rd E. coli concentrations by Year")
+        main = "Jeorse E. coli concentrations by Year")
 
 ############Final models###############
 
