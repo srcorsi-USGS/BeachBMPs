@@ -42,14 +42,18 @@ dfModel <- left_join(JP2,cal) %>%
 response <- "Ecoli"
 df <- dfModel[which(!is.na(dfModel[,response])),] #remove rows without E coli
 
-DataTestPeriod <- list(as.POSIXct(c("2013-05-01","2014-10-01","2016-05-01","2017-10-01")))
+DataTestPeriod <- list(as.POSIXct(c("2012-05-01","2014-10-01","2016-05-01","2017-10-01")))
 #                       as.POSIXct(c("2008-01-02","2010-01-02","2014-01-02","2016-01-02")))
 
 df <- subset(df,pdate < as.POSIXct("2013-01-01") | pdate > as.POSIXct("2014-01-01"))
 df <- subset(df,pdate > DataTestPeriod[[1]][1] & pdate < DataTestPeriod[[1]][4])
 df$Ecoli <- ifelse(df$Ecoli > 4000,4000,df$Ecoli)
 
+
 df <- na.omit(df)
+saveRDS(df,file = file.path("40_modeling","out","Jeorse2_model_df.rds"))
+write.csv(df,file = file.path("40_modeling","out","Jeorse2_model_df.csv"),row.names = FALSE)
+
 #######)))))))########
 
 

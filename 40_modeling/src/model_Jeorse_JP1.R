@@ -48,6 +48,8 @@ df <- subset(df,pdate > DataTestPeriod[[1]][1] & pdate < DataTestPeriod[[1]][4])
 df$Ecoli <- ifelse(df$Ecoli > 4000,4000,df$Ecoli)
 
 df <- na.omit(df)
+saveRDS(df,file = file.path("40_modeling","out","Jeorse1_model_df.rds"))
+write.csv(df,file = file.path("40_modeling","out","Jeorse1_model_df.csv"),row.names = FALSE)
 #######)))))))########
 
 

@@ -39,6 +39,9 @@ df$Wind.A.Component..BO....338.55ø. <- as.numeric(df$Wind.A.Component..BO....33
 df$Wind.O.Component..BO....338.55ø. <- as.numeric(df$Wind.O.Component..BO....338.55ø.)
 
 df <- na.omit(df)
+saveRDS(df,file = file.path("40_modeling","out","Racine_model_df.rds"))
+write.csv(df,file = file.path("40_modeling","out","Racine_model_df.csv"),row.names = FALSE)
+
 #######)))))))########
 
 

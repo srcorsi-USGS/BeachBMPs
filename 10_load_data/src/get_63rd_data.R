@@ -91,31 +91,31 @@ shell.exec(filenm)
 
 ################################################################################
 ## Summarize Jeorse data
-raw_directory <- "./10_load_data/raw/Jeorse/"
-filenm <- "E coli 2010_2017-variables.xlsx"
-
-dfJeorse <- as.data.frame(read_excel(paste(raw_directory,filenm,sep="") ,sheet = "E coli 2010_2017-variables"))
-
-dateCol <- "Date"
-pdateCol <- "pdate"
-siteCol <- "Location"
-dfJeorse <- addPdate(dfJeorse,dateCol,,siteCol=siteCol)
-
-startCol <- 4
-endCol <- dim(dfJeorse)[2]
-df <- dfJeorse
-
-dfSummaryJeorse <- get_data_info(dfJeorse,pdateCol,startCol,endCol)
-
-variables <- names(dfJeorse)[4:dim(df63)[2]]
-beach = "Jeorse"
-
-
-filenm <- "varPlotsJeorse.pdf"
-pdf(filenm)
-plotVarsTS(dfJeorse,variables,"pdate",beach=beach)
-dev.off()
-shell.exec(filenm)
+# raw_directory <- "./10_load_data/raw/Jeorse/"
+# filenm <- "E coli 2010_2017-variables.xlsx"
+# 
+# dfJeorse <- as.data.frame(read_excel(paste(raw_directory,filenm,sep="") ,sheet = "E coli 2010_2017-variables"))
+# 
+# dateCol <- "Date"
+# pdateCol <- "pdate"
+# siteCol <- "Location"
+# dfJeorse <- addPdate(dfJeorse,dateCol,,siteCol=siteCol)
+# 
+# startCol <- 4
+# endCol <- dim(dfJeorse)[2]
+# df <- dfJeorse
+# 
+# dfSummaryJeorse <- get_data_info(dfJeorse,pdateCol,startCol,endCol)
+# 
+# variables <- names(dfJeorse)[4:dim(df63)[2]]
+# beach = "Jeorse"
+# 
+# 
+# filenm <- "varPlotsJeorse.pdf"
+# pdf(filenm)
+# plotVarsTS(dfJeorse,variables,"pdate",beach=beach)
+# dev.off()
+# shell.exec(filenm)
 
 # 
 # 

@@ -41,6 +41,8 @@ DataTestPeriod <- list(as.POSIXct(c("2006-01-02","2010-01-02","2010-01-02","2016
 df <- subset(df,pdate > DataTestPeriod[[1]][1] & pdate < DataTestPeriod[[1]][4])
 
 df <- na.omit(df)
+saveRDS(df,file = file.path("40_modeling","out","63rd_model_df.rds"))
+
 #######)))))))########
 
 

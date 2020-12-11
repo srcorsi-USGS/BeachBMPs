@@ -63,7 +63,7 @@ year <- as.POSIXlt(j63$Date)$year + 1900
 boxplot(j63$RESULT_VALUE+1~year,log="y")
 
 
-jeorse <- j63[grep("Jeorse", j63$BEACH_NAME),]
+jeorse <- ibg[grep("Jeorse", ibg$BEACH_NAME),]
 
 plot(jeorse$pdate,jeorse$RESULT_VALUE,cex=0.6,ylab =  "E. coli",xlab = "",main = "Jeorse 1 & 2 E. coli and BMP evaluation periods")
 dates <- as.POSIXct(c("2013-05-01","2014-10-01","2016-05-01","2017-10-01"))
@@ -80,6 +80,7 @@ method_counts <- jeorse %>%
   group_by(year, ANALYSIS_METHOD_TYPE_TEXT) %>%
   summarize(n = length(RESULT_VALUE))
 
+write.csv(method_counts,file = "Jeorse_metho_counts_by_year.csv",row.names = FALSE)
 
 plot(JP1$pdate,JP1$Ecoli,cex=0.6,ylab =  "E. coli",xlab = "",main = "Jeorse 1 E. coli and BMP evaluation periods")
 dates <- as.POSIXct(c("2013-05-01","2014-10-01","2016-05-01","2017-10-01"))
@@ -97,4 +98,4 @@ text(x=mean(dates[3:4]),y=4500,labels = "post",col = "forestgreen")
 
 JP1_eval <- subset(JP1,pdate > dates[1] & pdate < dates[4])
 
-jp_combined <- 
+
