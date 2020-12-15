@@ -110,10 +110,10 @@ abline(h=log10(100),v=log10(235))
 
 # Test different pre post periods
 
-DataTestPeriod <- list(as.POSIXct(c("1997-01-01","2000-09-30","2004-12-31","2010-01-01")),
-                       as.POSIXct(c("2010-01-01","2013-12-31","2014-01-01","2017-01-01")),
-                       as.POSIXct(c("2005-01-01","2007-12-31","2016-12-31","2019-12-31")),
-                       as.POSIXct(c("1997-01-01","2000-12-31","2015-12-31","2019-12-31")))
+DataTestPeriod <- list(as.POSIXct(c("1997-01-01","2000-09-30","2005-01-01","2007-12-31")),
+                       as.POSIXct(c("2010-01-01","2013-12-31","2014-01-01","2017-12-31")),
+                       as.POSIXct(c("2005-01-01","2007-12-31","2011-01-01","2013-12-31")),
+                       as.POSIXct(c("1997-01-01","2000-12-31","2016-01-01","2019-12-31")))
 TestResult_list <- list()
 wilcox_results <- numeric()
 t.test_results <- numeric()
@@ -121,10 +121,21 @@ df$response <- log10(df$Ecoli)
 r2_values <- numeric()
 models <- list()
 subModeldf <- list()
+
+
+filenm <- "Racine_residual_boxplots.pdf"
+beach <- "North Beach"
+
+pdf(file = filenm)
 for(i in 1:length(DataTestPeriod)){
   testPeriod <- DataTestPeriod[[i]]
   subdf <- subset(df,pdate > testPeriod[1] & pdate < testPeriod[4])
-  
+  subdf <- subdf %>%
+    mutate(period = case_when(pdate > testPeriod[1] & pdate < testPeriod[2] ~ "Pre",
+                              pdate > testPeriod[2] & pdate < testPeriod[3] ~ "Transition",
+                              pdate > testPeriod[3] & pdate < testPeriod[4] ~ "Post"))
+  subdf$period <- factor(subdf$period,levels = c("Pre","Transition","Post"))
+  subdf$plotColors <- as.numeric(subdf$period) + 1
     m <- lm(response ~ 1,data = subdf)
   summary (m)
   
@@ -136,11 +147,12 @@ for(i in 1:length(DataTestPeriod)){
   
   summary(mstep)
   r2_values <- c(r2_values,summary(mstep)$r.squared)
+  plot(subdf$response,predict(mstep),xlab = "Observed",ylab = "Fitted",col = subdf$plotColors,pch=20,cex=0.8)
+  R2text <- bquote("adj R"^"2"~"="~.(round(r2_values[i],2)))
+  mtext(side=3,line=-1.5,R2text,col="orange") 
+  legend("topleft",legend = c("Pre","Transition","Post"),col = c(2,3,4),pch=20,cex=0.8,bty = "n")
   
-  plot(subdf$response~predict(mstep))
   subdf$resids <- residuals(mstep)
-  
-  transition <- as.POSIXct(c("2011-01-02"))
   
   subdf <- subdf %>%
     mutate(period = case_when(pdate > testPeriod[1] & pdate < testPeriod[2] ~ "Pre",
@@ -167,6 +179,8 @@ for(i in 1:length(DataTestPeriod)){
   subModeldf[[i]] <- subdf
   
 }
+dev.off()
+shell.exec(filenm)
 
 TestResult <- rbind(TestResult_list[[1]],TestResult_list[[2]]) %>%
   rbind(TestResult_list[[3]]) %>%
@@ -174,6 +188,8 @@ TestResult <- rbind(TestResult_list[[1]],TestResult_list[[2]]) %>%
 wilcox_results
 t.test_results
 r2_values
+
+summary(models[[1]])
 
 period1 <- filter(df,pdate < DataTestPeriod[[2]][1])
 period2 <- filter(df,pdate > DataTestPeriod[[2]][2],pdate < DataTestPeriod[[2]][3])
@@ -206,6 +222,12 @@ subdf <- subModeldf[[i]]
 m <- lm(response ~ 1,data = subdf)
 m4 <- step(m,scope = form)
 summary(m4)
+models[[1]]  <- m4
+
+saveRDS(object = models,file = file.path("40_modeling","out","Racine_model.rds"))
+saveRDS(object = as.data.frame(IVs,row.names = FALSE),file = file.path("40_modeling","out","Racine_IVs.rds"))
+
+
 
 plot(subdf$response~predict(m4))
 subdf$resids <- residuals(m4)

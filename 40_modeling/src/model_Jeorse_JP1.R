@@ -165,7 +165,7 @@ shell.exec(filenm)
 
 
 #TestResult <- TestResult_list[[1]]
- TestResult <- rbind(TestResult_list[[1]],TestResult_list[[2]])
+ TestResult <- TestResult_list[[1]]
 #   rbind(TestResult_list[[3]]) %>%
 #   rbind(TestResult_list[[4]])
 wilcox_results
@@ -187,73 +187,10 @@ boxplot(Ecoli~year,data = df,log = "y", ylab = "E. coli (cfu/100mL)",
 
 ############Final models###############
 
-## 1 ##
-# 1998-2010 analysis
-# examining the model variables, two of them do not make logical sense given the sign of the coefficients. Removing 
-# those results in the following model:
-i <- 1
+summary(mstep) # signs of coefficients look reasonable. Use this model.
 
-testPeriod <- DataTestPeriod[[i]]
+Jeorse1_coef <- coef(mstep)
 
-summary(models[[1]]) # remove 1-flow and 1-rain variable with negative coefficients
-model_vars <- names(coef(models[[i]]))[-c(1,7,8)]
-
-form <- formula(paste("response ~",paste(model_vars,collapse = " + ")))
-subdf <- subModeldf[[i]]
-m <- lm(response ~ 1,data = subdf)
-m4 <- step(m,scope = form)
-summary(m4)
-
-plot(subdf$response~predict(m4))
-subdf$resids <- residuals(m4)
-
-subdf <- subdf %>%
-  mutate(period = case_when(pdate > testPeriod[1] & pdate < testPeriod[2] ~ "Pre",
-                            pdate > testPeriod[2] & pdate < testPeriod[3] ~ "Transition",
-                            pdate > testPeriod[3] & pdate < testPeriod[4] ~ "Post"))
-subdf$period <- factor(subdf$period,levels = c("Pre","Transition","Post"))
-subModeldf[[i]] <- subdf
-
-par(mar = c(5,5,3,1))
-boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)",
-        main = paste0("Pre = ",testPeriod[1]," - ",testPeriod[2],"; Post = ",testPeriod[3]," - ", testPeriod[4]))
-pre <- subdf[subdf$period == "Pre","resids"]
-post <- subdf[subdf$period == "Post","resids"]
-wilcox.test(pre,post,paired = FALSE)
-t.test(pre,post)
-
-model_1_results <- subdf %>%
-  group_by(period) %>%
-  summarize(medianEC = median(Ecoli),
-            median_resid = median(resids),
-            meanEC = mean(Ecoli),
-            mean_resid = mean(resids),
-            n = length(Ecoli))
-model_1_results$testperiod <- paste(testPeriod[1],"-",testPeriod[4])
-
-
-TestResult <- rbind(model_1_results,TestResult_list[[2]]) %>%
-  rbind(TestResult_list[[3]]) %>%
-  rbind(TestResult_list[[4]])
-
-
-
-#
-
-dfResid <- subModeldf[[1]][,c("resids","period")]
-dfResid$Time_period <- "Period 1"
-for(i in 2:4) {
- temp <- subModeldf[[i]][,c("resids","period")]
- temp$Time_period <- paste("Period",i)
- dfResid <- rbind(dfResid,temp)
-}
-
-library(ggplot2)
-
-ggplot(dfResid,aes(x=period,y=resids)) +
-  geom_boxplot() +
-  facet_wrap(vars(Time_period),nrow = 2) +
-  ggtitle("Residuals for Pre, Transition, and Post Periods for Management Effectiveness Evaluation")
-
-boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)",
-        main = paste0("Pre = ",testPeriod[1]," - ",testPeriod[2],"; Post = ",testPeriod[3]," - ", testPeriod[4]))
+saveRDS(object = mstep,file = file.path("40_modeling","out","Jeorse1_model.rds"))
+saveRDS(object = as.data.frame(IVs,row.names = FALSE),file = file.path("40_modeling","out","Jeorse1_IVs.rds"))
+        
