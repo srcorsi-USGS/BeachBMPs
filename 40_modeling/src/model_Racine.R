@@ -10,6 +10,7 @@ source("20_process_data/src/fxn_cart2polar_polar2cart.R")
 source("20_process_data/src/fxn_cart2polar_polar2cart_df.R")
 source("20_process_data/src/process_Racine.R")
 
+milw_wsel <- read.csv("10_load_data/raw/Racine/9087057_daily_mean lake level.csv",stringsAsFactors = FALSE)
 dfNB <- read.csv("10_load_data/raw/Racine/North Beach Historical Database 1995-2019 COMBINED EDIT.csv",
                  stringsAsFactors = FALSE, 
                  na.strings = c('NR','#N/A', 'NC', 'No Data','N/A','NA'))
@@ -18,8 +19,32 @@ dfNBIVs <- read.csv("10_load_data/raw/Racine/IVs.csv",stringsAsFactors = FALSE)
 
 dfRacine <- get_Racine(df=dfNB,dfIVs=dfNBIVs)
 
+milw_wsel$pdate <- as.POSIXct(milw_wsel$Date,format = "%Y/%m/%d", tz = "GMT")
+milw_wsel <- milw_wsel %>%
+  rename(mke_lake_level = Level)
+
+dfRacine <- left_join(dfRacine,milw_wsel[,c("pdate","mke_lake_level")]) %>%
+  select(-Water.Level..ft....NOAA.Milwaukee..WI...Station.ID..9087057)
+
+
 dfModel <- process_Racine(dfRacine)
 
+
+
+# sum(dfRacine$pdate %in% milw_wsel$pdate)
+# 
+# plot(test$mke_lake_level,test$Water.Level..ft....NOAA.Milwaukee..WI...Station.ID..9087057)
+# 
+# plot(milw_wsel$pdate,milw_wsel$mke_lake_level)
+# points(dfRacine$pdate,dfRacine$Water.Level..ft....NOAA.Milwaukee..WI...Station.ID..9087057-402.3994,col = "blue")
+# 
+# mean(test$mke_lake_level - test$Water.Level..ft....NOAA.Milwaukee..WI...Station.ID..9087057,na.rm = TRUE)
+# plot(test$pdate,test$mke_lake_level,col = "red",pch = 1,cex = 0.7)
+# points(test$pdate,(test$Water.Level..ft....NOAA.Milwaukee..WI...Station.ID..9087057-402.3994),col = "blue",pch = 20,cex = 0.7)
+# 
+# test2 <- test[which(is.na(test$mke_lake_level)),]
+# test3 <- test[which(is.na(test$Water.Level..ft....NOAA.Milwaukee..WI...Station.ID..9087057)),]
+# plot(test2$pdate,test2$Water.Level..ft....NOAA.Milwaukee..WI...Station.ID..9087057
 
 #model_Racine <- function(df){
 
@@ -35,8 +60,8 @@ df <- dfModel[which(!is.na(dfModel[,response])),] #remove rows without E coli
 #df <- subset(df,pdate>preDates[1])
 #df$period <- ifelse(df$pdate < preDates[2],"pre","post")
 #df$period <- ifelse(df$pdate >postDates[1] & df$pdate < postDates[2],"during",df$period)
-df$Wind.A.Component..BO....338.55Ã¸. <- as.numeric(df$Wind.A.Component..BO....338.55Ã¸.)
-df$Wind.O.Component..BO....338.55Ã¸. <- as.numeric(df$Wind.O.Component..BO....338.55Ã¸.)
+df$Wind.A.Component..BO....338.55ø. <- as.numeric(df$Wind.A.Component..BO....338.55ø.)
+df$Wind.O.Component..BO....338.55ø. <- as.numeric(df$Wind.O.Component..BO....338.55ø.)
 
 df <- na.omit(df)
 saveRDS(df,file = file.path("40_modeling","out","Racine_model_df.rds"))
@@ -110,10 +135,11 @@ abline(h=log10(100),v=log10(235))
 
 # Test different pre post periods
 
-DataTestPeriod <- list(as.POSIXct(c("1997-01-01","2000-09-30","2005-01-01","2007-12-31")),
-                       as.POSIXct(c("2010-01-01","2013-12-31","2014-01-01","2017-12-31")),
+DataTestPeriod <- list(as.POSIXct(c("1997-01-01","2000-12-31","2016-01-01","2019-12-31")),
+                       as.POSIXct(c("1997-01-01","2000-09-30","2005-01-01","2007-12-31")),
                        as.POSIXct(c("2005-01-01","2007-12-31","2011-01-01","2013-12-31")),
-                       as.POSIXct(c("1997-01-01","2000-12-31","2016-01-01","2019-12-31")))
+                       as.POSIXct(c("2010-01-01","2013-12-31","2014-01-01","2017-12-31")))
+
 TestResult_list <- list()
 wilcox_results <- numeric()
 t.test_results <- numeric()
@@ -206,15 +232,15 @@ boxplot(Ecoli~year,data = df,log = "y", ylab = "E. coli (cfu/100mL)",
 
 ############Final models###############
 
-## 1 ##
+## 2 ##
 # 1998-2010 analysis
 # examining the model variables, two of them do not make logical sense given the sign of the coefficients. Removing 
 # those results in the following model:
-i <- 1
+i <- 2
 
 testPeriod <- DataTestPeriod[[i]]
 
-summary(models[[1]]) # remove 1-flow and 1-rain variable with negative coefficients
+summary(models[[i]]) # remove 1-flow and 1-rain variable with negative coefficients
 model_vars <- names(coef(models[[i]]))[-c(1,7,8)]
 
 form <- formula(paste("response ~",paste(model_vars,collapse = " + ")))
@@ -222,63 +248,63 @@ subdf <- subModeldf[[i]]
 m <- lm(response ~ 1,data = subdf)
 m4 <- step(m,scope = form)
 summary(m4)
-models[[1]]  <- m4
+models[[i]]  <- m4
 
 saveRDS(object = models,file = file.path("40_modeling","out","Racine_model.rds"))
 saveRDS(object = as.data.frame(IVs,row.names = FALSE),file = file.path("40_modeling","out","Racine_IVs.rds"))
 
 
 
-plot(subdf$response~predict(m4))
-subdf$resids <- residuals(m4)
-
-subdf <- subdf %>%
-  mutate(period = case_when(pdate > testPeriod[1] & pdate < testPeriod[2] ~ "Pre",
-                            pdate > testPeriod[2] & pdate < testPeriod[3] ~ "Transition",
-                            pdate > testPeriod[3] & pdate < testPeriod[4] ~ "Post"))
-subdf$period <- factor(subdf$period,levels = c("Pre","Transition","Post"))
-subModeldf[[i]] <- subdf
-
-par(mar = c(5,5,3,1))
-boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)",
-        main = paste0("Pre = ",testPeriod[1]," - ",testPeriod[2],"; Post = ",testPeriod[3]," - ", testPeriod[4]))
-pre <- subdf[subdf$period == "Pre","resids"]
-post <- subdf[subdf$period == "Post","resids"]
-wilcox.test(pre,post,paired = FALSE)
-t.test(pre,post)
-
-model_1_results <- subdf %>%
-  group_by(period) %>%
-  summarize(medianEC = median(Ecoli),
-            median_resid = median(resids),
-            meanEC = mean(Ecoli),
-            mean_resid = mean(resids),
-            n = length(Ecoli))
-model_1_results$testperiod <- paste(testPeriod[1],"-",testPeriod[4])
-
-
-TestResult <- rbind(model_1_results,TestResult_list[[2]]) %>%
-  rbind(TestResult_list[[3]]) %>%
-  rbind(TestResult_list[[4]])
-
-
-
-#
-
-dfResid <- subModeldf[[1]][,c("resids","period")]
-dfResid$Time_period <- "Period 1"
-for(i in 2:4) {
- temp <- subModeldf[[i]][,c("resids","period")]
- temp$Time_period <- paste("Period",i)
- dfResid <- rbind(dfResid,temp)
-}
-
-library(ggplot2)
-
-ggplot(dfResid,aes(x=period,y=resids)) +
-  geom_boxplot() +
-  facet_wrap(vars(Time_period),nrow = 2) +
-  ggtitle("Residuals for Pre, Transition, and Post Periods for Management Effectiveness Evaluation")
-
-boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)",
-        main = paste0("Pre = ",testPeriod[1]," - ",testPeriod[2],"; Post = ",testPeriod[3]," - ", testPeriod[4]))
+# plot(subdf$response~predict(m4))
+# subdf$resids <- residuals(m4)
+# 
+# subdf <- subdf %>%
+#   mutate(period = case_when(pdate > testPeriod[1] & pdate < testPeriod[2] ~ "Pre",
+#                             pdate > testPeriod[2] & pdate < testPeriod[3] ~ "Transition",
+#                             pdate > testPeriod[3] & pdate < testPeriod[4] ~ "Post"))
+# subdf$period <- factor(subdf$period,levels = c("Pre","Transition","Post"))
+# subModeldf[[i]] <- subdf
+# 
+# par(mar = c(5,5,3,1))
+# boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)",
+#         main = paste0("Pre = ",testPeriod[1]," - ",testPeriod[2],"; Post = ",testPeriod[3]," - ", testPeriod[4]))
+# pre <- subdf[subdf$period == "Pre","resids"]
+# post <- subdf[subdf$period == "Post","resids"]
+# wilcox.test(pre,post,paired = FALSE)
+# t.test(pre,post)
+# 
+# model_1_results <- subdf %>%
+#   group_by(period) %>%
+#   summarize(medianEC = median(Ecoli),
+#             median_resid = median(resids),
+#             meanEC = mean(Ecoli),
+#             mean_resid = mean(resids),
+#             n = length(Ecoli))
+# model_1_results$testperiod <- paste(testPeriod[1],"-",testPeriod[4])
+# 
+# 
+# TestResult <- rbind(model_1_results,TestResult_list[[2]]) %>%
+#   rbind(TestResult_list[[3]]) %>%
+#   rbind(TestResult_list[[4]])
+# 
+# 
+# 
+# #
+# 
+# dfResid <- subModeldf[[1]][,c("resids","period")]
+# dfResid$Time_period <- "Period 1"
+# for(i in 2:4) {
+#  temp <- subModeldf[[i]][,c("resids","period")]
+#  temp$Time_period <- paste("Period",i)
+#  dfResid <- rbind(dfResid,temp)
+# }
+# 
+# library(ggplot2)
+# 
+# ggplot(dfResid,aes(x=period,y=resids)) +
+#   geom_boxplot() +
+#   facet_wrap(vars(Time_period),nrow = 2) +
+#   ggtitle("Residuals for Pre, Transition, and Post Periods for Management Effectiveness Evaluation")
+# 
+# boxplot(resids~period,data = subdf, ylab = "Residuals (Log E. coli cfu/100 mL)",
+#         main = paste0("Pre = ",testPeriod[1]," - ",testPeriod[2],"; Post = ",testPeriod[3]," - ", testPeriod[4]))
