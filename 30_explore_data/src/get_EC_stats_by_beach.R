@@ -47,10 +47,10 @@ Racine_ec$bmp <- ifelse(Racine_ec$year %in% c((PrePost[2]+1):(PrePost[3]-1)),"tr
 #                        as.POSIXct(c("2005-01-01","2007-12-31","2016-12-31","2019-12-31")),
 #                        as.POSIXct(c("1997-01-01","2000-12-31","2015-12-31","2019-12-31")))
 
-DataTestPeriod <- list(as.POSIXct(c("1997-01-01","2000-09-30","2005-01-01","2007-12-31")),
-                       as.POSIXct(c("2010-01-01","2013-12-31","2014-01-01","2017-12-31")),
+DataTestPeriod <- list(as.POSIXct(c("1997-01-01","2000-12-31","2016-01-01","2019-12-31")),
+                       as.POSIXct(c("1997-01-01","2000-09-30","2005-01-01","2007-12-31")),
                        as.POSIXct(c("2005-01-01","2007-12-31","2011-01-01","2013-12-31")),
-                       as.POSIXct(c("1997-01-01","2000-12-31","2016-01-01","2019-12-31")))
+                       as.POSIXct(c("2010-01-01","2013-12-31","2014-01-01","2017-12-31")))
 
 Racine_medians <- data.frame(period = NULL,median_EC = NULL,count_EC = NULL, test_period = NULL)
 for(i in 1:length(DataTestPeriod)){

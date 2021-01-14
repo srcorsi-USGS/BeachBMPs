@@ -60,8 +60,8 @@ df <- dfModel[which(!is.na(dfModel[,response])),] #remove rows without E coli
 #df <- subset(df,pdate>preDates[1])
 #df$period <- ifelse(df$pdate < preDates[2],"pre","post")
 #df$period <- ifelse(df$pdate >postDates[1] & df$pdate < postDates[2],"during",df$period)
-df$Wind.A.Component..BO....338.55ø. <- as.numeric(df$Wind.A.Component..BO....338.55ø.)
-df$Wind.O.Component..BO....338.55ø. <- as.numeric(df$Wind.O.Component..BO....338.55ø.)
+df$Wind.A.Component..BO....338.55?. <- as.numeric(df$Wind.A.Component..BO....338.55?.)
+df$Wind.O.Component..BO....338.55?. <- as.numeric(df$Wind.O.Component..BO....338.55?.)
 
 df <- na.omit(df)
 saveRDS(df,file = file.path("40_modeling","out","Racine_model_df.rds"))
@@ -255,6 +255,22 @@ saveRDS(object = as.data.frame(IVs,row.names = FALSE),file = file.path("40_model
 
 
 
+# Water level change for test period 4 at Racine:
+
+DataTestPeriod <- list(as.POSIXct(c("1997-01-01","2000-12-31","2016-01-01","2019-12-31")),
+                       as.POSIXct(c("1997-01-01","2000-09-30","2005-01-01","2007-12-31")),
+                       as.POSIXct(c("2005-01-01","2007-12-31","2011-01-01","2013-12-31")),
+                       as.POSIXct(c("2010-01-01","2013-12-31","2014-01-01","2017-12-31")))
+
+milw_wsel$period4 <- ifelse(milw_wsel$pdate > DataTestPeriod[[4]][1] & milw_wsel$pdate < DataTestPeriod[[4]][2],"pre","NA")
+milw_wsel$period4 <- ifelse(milw_wsel$pdate > DataTestPeriod[[4]][3] & milw_wsel$pdate < DataTestPeriod[[4]][4],"post",milw_wsel$period4)
+
+milw_wsel_periods <- milw_wsel %>%
+  group_by(period4) %>%
+  summarize(mean_w_level = round(mean(mke_lake_level,na.rm=TRUE),3))
+
+milw_wsel_periods$mean_w_level[2] - milw_wsel_periods$mean_w_level[3]
+  
 # plot(subdf$response~predict(m4))
 # subdf$resids <- residuals(m4)
 # 
