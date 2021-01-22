@@ -60,8 +60,12 @@ df <- dfModel[which(!is.na(dfModel[,response])),] #remove rows without E coli
 #df <- subset(df,pdate>preDates[1])
 #df$period <- ifelse(df$pdate < preDates[2],"pre","post")
 #df$period <- ifelse(df$pdate >postDates[1] & df$pdate < postDates[2],"during",df$period)
-df$Wind.A.Component..BO....338.55?. <- as.numeric(df$Wind.A.Component..BO....338.55?.)
-df$Wind.O.Component..BO....338.55?. <- as.numeric(df$Wind.O.Component..BO....338.55?.)
+
+# Remove special characters from Wind variable names
+names(df)[grep("Wind.A.Component",names(df))] <- "Wind.A.Component..BO....338.55"
+names(df)[grep("Wind.O.Component",names(df))] <- "Wind.O.Component..BO....338.55"
+df$Wind.A.Component..BO....338.55 <- as.numeric(df$Wind.A.Component..BO....338.55)
+df$Wind.O.Component..BO....338.55 <- as.numeric(df$Wind.O.Component..BO....338.55)
 
 df <- na.omit(df)
 saveRDS(df,file = file.path("40_modeling","out","Racine_model_df.rds"))
@@ -267,10 +271,26 @@ milw_wsel$period4 <- ifelse(milw_wsel$pdate > DataTestPeriod[[4]][3] & milw_wsel
 
 milw_wsel_periods <- milw_wsel %>%
   group_by(period4) %>%
-  summarize(mean_w_level = round(mean(mke_lake_level,na.rm=TRUE),3))
+  summarize(mean_w_level = round(mean(mke_lake_level,na.rm=TRUE),3),
+            min_w_level = round(min(mke_lake_level,na.rm=TRUE),3),
+            max_w_level = round(max(mke_lake_level,na.rm=TRUE),3))
 
 milw_wsel_periods$mean_w_level[2] - milw_wsel_periods$mean_w_level[3]
-  
+milw_wsel_periods$max_w_level[2] - milw_wsel_periods$min_w_level[3]  
+
+
+#Now from samples
+dfModel$period4 <- ifelse(dfModel$pdate > DataTestPeriod[[4]][1] & dfModel$pdate < DataTestPeriod[[4]][2],"pre","NA")
+dfModel$period4 <- ifelse(dfModel$pdate > DataTestPeriod[[4]][3] & dfModel$pdate < DataTestPeriod[[4]][4],"post",dfModel$period4)
+
+milw_wsel_periods2 <- dfModel %>%
+  group_by(period4) %>%
+  summarize(mean_w_level = round(mean(mke_lake_level,na.rm=TRUE),3),
+            min_w_level = round(min(mke_lake_level,na.rm=TRUE),3),
+            max_w_level = round(max(mke_lake_level,na.rm=TRUE),3))
+milw_wsel_periods2$mean_w_level[2] - milw_wsel_periods2$mean_w_level[3]
+
+
 # plot(subdf$response~predict(m4))
 # subdf$resids <- residuals(m4)
 # 
